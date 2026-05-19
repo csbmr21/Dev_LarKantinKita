@@ -1,0 +1,41 @@
+{
+  "name": "kantinkita-web",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "lint": "eslint . --ext js,jsx --report-unused-disable-directives",
+    "format": "prettier --write src/"
+  },
+  "dependencies": {
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "react-router-dom": "^7.0.0",
+    "axios": "^1.7.0",
+    "zustand": "^5.0.0",
+    "@tanstack/react-query": "^5.0.0",
+    "recharts": "^2.12.0",
+    "react-hot-toast": "^2.4.0",
+    "@heroicons/react": "^2.1.0",
+    "date-fns": "^3.6.0",
+    "laravel-echo": "^1.16.0",
+    "pusher-js": "^8.4.0",
+    "clsx": "^2.1.0",
+    "tailwind-merge": "^2.3.0"
+  },
+  "devDependencies": {
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "@vitejs/plugin-react": "^4.3.0",
+    "vite": "^6.0.0",
+    "tailwindcss": "^4.0.0",
+    "@tailwindcss/vite": "^4.0.0",
+    "autoprefixer": "^10.4.0",
+    "eslint": "^9.0.0",
+    "eslint-plugin-react": "^7.34.0",
+    "prettier": "^3.3.0"
+  }
+}
