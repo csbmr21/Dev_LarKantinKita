@@ -145,7 +145,28 @@ return new class extends Migration
 
     private function indexExists(string $table, string $indexName): bool
     {
-        $indexes = \DB::select("SHOW INDEX FROM `{$table}` WHERE Key_name = ?", [$indexName]);
-        return count($indexes) > 0;
+        try {
+            return Schema::hasIndex($table, $indexName);
+        } catch (\Throwable $e) {
+            $connection = \DB::connection();
+            $driver = $connection->getDriverName();
+
+            if ($driver === 'sqlite') {
+                $results = $connection->select("PRAGMA index_list(`{$table}`)");
+                foreach ($results as $row) {
+                    if (isset($row->name) && $row->name === $indexName) {
+                        return true;
+                    }
+                }
+                return false;
+            }
+
+            if ($driver === 'mysql') {
+                $results = $connection->select("SHOW INDEX FROM `{$table}` WHERE Key_name = ?", [$indexName]);
+                return count($results) > 0;
+            }
+
+            return false;
+        }
     }
 };
