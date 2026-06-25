@@ -35,8 +35,15 @@ api.interceptors.response.use(
 
     switch (status) {
       case 401:
-        useAuthStore.getState().logout();
-        window.location.href = '/login';
+        // Jangan redirect ke login jika error berasal dari request login atau verifikasi OTP,
+        // agar error detail (seperti password/OTP salah) bisa ditangkap dan ditampilkan di UI.
+        const isAuthRequest = error.config?.url?.includes('/auth/login') || 
+                              error.config?.url?.includes('/auth/google/verify-otp');
+        
+        if (!isAuthRequest) {
+          useAuthStore.getState().logout();
+          window.location.href = '/login';
+        }
         break;
 
       case 403:
