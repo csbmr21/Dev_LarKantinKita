@@ -36,6 +36,8 @@ Route::middleware(['throttle:60,1'])->group(function () {
     Route::post('/auth/check-company',  [AuthController::class, 'checkCompany']);
     Route::get('/auth/google/redirect', [AuthController::class, 'redirectToGoogle']);
     Route::get('/auth/google/callback', [AuthController::class, 'handleGoogleCallback']);
+    Route::get('/auth/google/gmail-redirect', [AuthController::class, 'redirectToGoogleGmail'])->name('gmail.redirect');
+    Route::get('/auth/google/gmail-callback', [AuthController::class, 'handleGoogleGmailCallback'])->name('gmail.callback');
     Route::post('/auth/google/verify-otp', [AuthController::class, 'verifyGoogleOtp']);
     Route::post('/auth/forgot-password', [AuthController::class, 'forgotPassword']);
     Route::post('/auth/reset-password',   [AuthController::class, 'resetPassword']);

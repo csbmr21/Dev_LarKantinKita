@@ -22,5 +22,17 @@ class AppServiceProvider extends ServiceProvider
         RateLimiter::for('auth', function (Request $request) {
             return Limit::perMinute(10)->by($request->ip());
         });
+
+        // Register custom Gmail API mailer transport
+        $this->app->afterResolving(\Illuminate\Mail\MailManager::class, function (\Illuminate\Mail\MailManager $manager) {
+            $manager->extend('gmail-api', function () {
+                return new \App\Mail\Transport\GmailApiTransport(
+                    config('services.google.client_id'),
+                    config('services.google.client_secret'),
+                    config('services.google.refresh_token'),
+                    config('mail.from.address')
+                );
+            });
+        });
     }
 }

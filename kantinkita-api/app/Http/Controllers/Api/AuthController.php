@@ -20,6 +20,7 @@ use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
 use App\Mail\OtpMail;
 use App\Mail\ResetPasswordMail;
+use Illuminate\Support\Facades\Http;
 
 
 class AuthController extends Controller
@@ -33,7 +34,7 @@ class AuthController extends Controller
         ]);
 
         $code = strtoupper(trim($request->company_code));
-        
+
         // Special Bypass for System Administrator
         if ($code === 'SYSAD') {
             return $this->success([
@@ -59,26 +60,26 @@ class AuthController extends Controller
             ->count();
 
         return $this->success([
-            'company_code'  => $code,
-            'company_name'  => $tenant->tenant_name,
-            'tenant_count'  => $tenantCount,
+            'company_code' => $code,
+            'company_name' => $tenant->tenant_name,
+            'tenant_count' => $tenantCount,
         ], 'Kode perusahaan valid');
     }
 
     public function register(RegisterRequest $request)
     {
         $user = User::create([
-            'name'         => $request->full_name,
-            'full_name'    => $request->full_name,
-            'username'     => $request->username,
-            'email'        => $request->email,
-            'phone'        => $request->phone,
-            'password'          => Hash::make($request->password),
-            'role'              => 'customer',
-            'company_code'      => $request->company_code ?? 'UNIV',
-            'created_by'        => $request->username,
-            'updated_by'        => $request->username,
-            'status'            => 1,
+            'name' => $request->full_name,
+            'full_name' => $request->full_name,
+            'username' => $request->username,
+            'email' => $request->email,
+            'phone' => $request->phone,
+            'password' => Hash::make($request->password),
+            'role' => 'customer',
+            'company_code' => $request->company_code ?? 'UNIV',
+            'created_by' => $request->username,
+            'updated_by' => $request->username,
+            'status' => 1,
             'profile_completed' => false,
         ]);
 
@@ -128,12 +129,12 @@ class AuthController extends Controller
     public function updateProfile(Request $request)
     {
         $request->validate([
-            'full_name'   => 'required|string|max:200',
-            'phone'       => 'nullable|string|max:20',
-            'dob'         => 'nullable|date',
+            'full_name' => 'required|string|max:200',
+            'phone' => 'nullable|string|max:20',
+            'dob' => 'nullable|date',
             'email_notif' => 'nullable|boolean',
-            'wa_notif'    => 'nullable|boolean',
-            'photo'       => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
+            'wa_notif' => 'nullable|boolean',
+            'photo' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
         ]);
 
         $user = $request->user();
@@ -162,15 +163,15 @@ class AuthController extends Controller
         }
 
         $request->validate([
-            'username'    => 'required|string|max:100|unique:users,username,' . $user->id,
-            'full_name'   => 'required|string|max:200',
-            'email'       => 'required|email|max:255|unique:users,email,' . $user->id,
-            'no_ktp'      => 'required|string|max:50|min:16',
-            'phone'       => 'nullable|string|max:20',
-            'dob'         => 'nullable|date',
-            'role'        => 'required|in:customer,owner',
+            'username' => 'required|string|max:100|unique:users,username,' . $user->id,
+            'full_name' => 'required|string|max:200',
+            'email' => 'required|email|max:255|unique:users,email,' . $user->id,
+            'no_ktp' => 'required|string|max:50|min:16',
+            'phone' => 'nullable|string|max:20',
+            'dob' => 'nullable|date',
+            'role' => 'required|in:customer,owner',
             'tenant_name' => 'required_if:role,owner|string|max:200',
-            'password'    => 'nullable|string|min:8|confirmed',
+            'password' => 'nullable|string|min:8|confirmed',
         ]);
 
         $companyCode = 'UNIV';
@@ -182,32 +183,32 @@ class AuthController extends Controller
 
                 // New tenants get a 2-day free trial automatically
                 $tenant = Tenant::create([
-                    'user_id'       => $user->id,
-                    'tenant_name'   => $request->tenant_name,
-                    'slug'          => Str::slug($request->tenant_name) . '-' . time(),
-                    'company_code'  => $companyCode,
-                    'status'        => 1,
-                    'is_deleted'    => 0,
+                    'user_id' => $user->id,
+                    'tenant_name' => $request->tenant_name,
+                    'slug' => Str::slug($request->tenant_name) . '-' . time(),
+                    'company_code' => $companyCode,
+                    'status' => 1,
+                    'is_deleted' => 0,
                     'trial_ends_at' => now()->addDays(2),
                 ]);
 
                 Log::info("setupProfile: Tenant created", [
                     'tenant_id' => $tenant->id,
-                    'user_id'   => $user->id,
+                    'user_id' => $user->id,
                     'tenant_name' => $tenant->tenant_name,
                 ]);
             }
 
             $updateData = [
-                'username'          => $request->username,
-                'full_name'         => $request->full_name,
-                'name'              => $request->full_name,
-                'email'             => $request->email,
-                'no_ktp'            => $request->no_ktp,
-                'phone'             => $request->phone,
-                'dob'               => $request->dob,
-                'role'              => $request->role,
-                'company_code'      => $companyCode,
+                'username' => $request->username,
+                'full_name' => $request->full_name,
+                'name' => $request->full_name,
+                'email' => $request->email,
+                'no_ktp' => $request->no_ktp,
+                'phone' => $request->phone,
+                'dob' => $request->dob,
+                'role' => $request->role,
+                'company_code' => $companyCode,
                 'profile_completed' => true,
             ];
 
@@ -255,7 +256,7 @@ class AuthController extends Controller
                 $code .= strtoupper(substr($word, 0, 1));
             }
         }
-        
+
         // Pelindung jika nama kosong atau karakter aneh
         if (empty($code)) {
             $code = 'KNTN';
@@ -279,8 +280,8 @@ class AuthController extends Controller
     public function changePassword(Request $request)
     {
         $request->validate([
-            'current_password'      => 'required',
-            'password'              => 'required|min:8|confirmed',
+            'current_password' => 'required',
+            'password' => 'required|min:8|confirmed',
             'password_confirmation' => 'required',
         ]);
 
@@ -307,15 +308,15 @@ class AuthController extends Controller
             /** @var \Laravel\Socialite\Two\GoogleProvider $driver */
             $driver = Socialite::driver('google');
             $googleUser = $driver->stateless()->user();
-            
+
             $user = User::where('email', $googleUser->getEmail())->first();
 
             if ($user) {
                 // Update google_id, ENSURE status is active (1)
                 $user->update([
                     'google_id' => $googleUser->getId(),
-                    'photo'     => $googleUser->getAvatar(),
-                    'status'    => 1,
+                    'photo' => $googleUser->getAvatar(),
+                    'status' => 1,
                 ]);
             } else {
                 // Generate a unique username
@@ -329,37 +330,37 @@ class AuthController extends Controller
 
                 // Create new user with profile_completed = false
                 $user = User::create([
-                    'name'              => $googleUser->getName() ?? $username,
-                    'full_name'         => $googleUser->getName() ?? $username,
-                    'username'          => $username,
-                    'email'             => $googleUser->getEmail(),
-                    'google_id'         => $googleUser->getId(),
-                    'photo'             => $googleUser->getAvatar(),
-                    'password'          => Hash::make(Str::random(24)),
-                    'role'              => 'customer',
-                    'company_code'      => 'UNIV',
-                    'created_by'        => 'System',
-                    'updated_by'        => 'System',
+                    'name' => $googleUser->getName() ?? $username,
+                    'full_name' => $googleUser->getName() ?? $username,
+                    'username' => $username,
+                    'email' => $googleUser->getEmail(),
+                    'google_id' => $googleUser->getId(),
+                    'photo' => $googleUser->getAvatar(),
+                    'password' => Hash::make(Str::random(24)),
+                    'role' => 'customer',
+                    'company_code' => 'UNIV',
+                    'created_by' => 'System',
+                    'updated_by' => 'System',
                     'profile_completed' => false,
-                    'status'            => 1,
+                    'status' => 1,
                 ]);
             }
 
             $frontend = config('app.frontend_url', 'http://localhost:5173');
-            
+
             if (!$user->status) {
                 return redirect($frontend . '/login?error=Akun+dinonaktifkan');
             }
 
             // ── 2FA OTP Logic ─────────────────────────────
-            $otp       = str_pad(rand(0, 999999), 6, '0', STR_PAD_LEFT);
+            $otp = str_pad(rand(0, 999999), 6, '0', STR_PAD_LEFT);
             $intentKey = Str::random(40);
-            
+
             // Simpan OTP di Cache selama 10 menit
             Cache::put("otp_intent:{$intentKey}", [
                 'user_id' => $user->id,
-                'email'   => $user->email,
-                'otp'     => $otp
+                'email' => $user->email,
+                'otp' => $otp
             ], now()->addMinutes(10));
 
             // Kirim Email
@@ -384,9 +385,9 @@ class AuthController extends Controller
     public function verifyGoogleOtp(Request $request)
     {
         $request->validate([
-            'email'  => 'required|email',
+            'email' => 'required|email',
             'intent' => 'required|string',
-            'otp'    => 'required|string|size:6',
+            'otp' => 'required|string|size:6',
         ]);
 
         $cached = Cache::get("otp_intent:{$request->intent}");
@@ -401,7 +402,7 @@ class AuthController extends Controller
 
         // OTP Valid -> Selesaikan Login
         $user = User::findOrFail($cached['user_id']);
-        
+
         // Hapus Cache setelah berhasil
         Cache::forget("otp_intent:{$request->intent}");
 
@@ -409,7 +410,7 @@ class AuthController extends Controller
         ActivityLog::record('login', "Login Google 2FA Berhasil: {$user->email}", $user->id);
 
         return $this->success([
-            'user'  => $user,
+            'user' => $user,
             'token' => $token
         ], 'Verifikasi berhasil');
     }
@@ -430,7 +431,7 @@ class AuthController extends Controller
         DB::table('password_reset_tokens')->updateOrInsert(
             ['email' => $user->email],
             [
-                'token'      => Hash::make($token),
+                'token' => Hash::make($token),
                 'created_at' => Carbon::now()
             ]
         );
@@ -449,8 +450,8 @@ class AuthController extends Controller
     public function resetPassword(Request $request)
     {
         $request->validate([
-            'email'    => 'required|email|exists:users,email',
-            'token'    => 'required|string',
+            'email' => 'required|email|exists:users,email',
+            'token' => 'required|string',
             'password' => 'required|string|min:8|confirmed',
         ]);
 
@@ -474,5 +475,85 @@ class AuthController extends Controller
         ActivityLog::record('reset_password', "Reset password berhasil: {$user->email}", $user->id);
 
         return $this->success(null, 'Password Anda berhasil diubah. Silakan login kembali.');
+    }
+
+    public function redirectToGoogleGmail()
+    {
+        $redirectUri = url('/api/v1/auth/google/gmail-callback');
+        
+        $queries = http_build_query([
+            'client_id'     => env('GOOGLE_CLIENT_ID'),
+            'redirect_uri'  => $redirectUri,
+            'scope'         => 'https://www.googleapis.com/auth/gmail.send',
+            'response_type' => 'code',
+            'access_type'   => 'offline',
+            'prompt'        => 'consent'
+        ]);
+
+        return redirect('https://accounts.google.com/o/oauth2/v2/auth?' . $queries);
+    }
+
+    public function handleGoogleGmailCallback(Request $request)
+    {
+        $code = $request->query('code');
+        if (!$code) {
+            return response('No authorization code provided.', 400);
+        }
+
+        $redirectUri = url('/api/v1/auth/google/gmail-callback');
+
+        $response = Http::post('https://oauth2.googleapis.com/token', [
+            'client_id'     => env('GOOGLE_CLIENT_ID'),
+            'client_secret' => env('GOOGLE_CLIENT_SECRET'),
+            'redirect_uri'  => $redirectUri,
+            'code'          => $code,
+            'grant_type'    => 'authorization_code',
+        ]);
+
+        if ($response->failed()) {
+            return response()->json([
+                'error' => 'Failed to obtain refresh token.',
+                'details' => $response->json()
+            ], 400);
+        }
+
+        $data = $response->json();
+        $refreshToken = $data['refresh_token'] ?? null;
+
+        if (!$refreshToken) {
+            return response('No refresh token returned. Make sure to remove app access from your Google Account and try again (or ensure prompt=consent is active).', 400);
+        }
+
+        return "
+            <html>
+            <head>
+                <title>Google Gmail Refresh Token</title>
+                <style>
+                    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 40px; background: #f3f4f6; color: #1f2937; line-height: 1.6; }
+                    .card { background: white; padding: 32px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); max-width: 600px; margin: 0 auto; }
+                    h2 { color: #10b981; margin-top: 0; }
+                    code { background: #f3f4f6; padding: 8px 12px; border-radius: 6px; display: block; word-break: break-all; margin: 16px 0; font-family: monospace; font-size: 14px; border: 1px solid #e5e7eb; }
+                    .instruction { font-size: 14px; color: #4b5563; }
+                </style>
+            </head>
+            <body>
+                <div class='card'>
+                    <h2>Google Gmail API Authorization Successful!</h2>
+                    <p>Copy this Refresh Token and add it to your Railway variables as <code>GOOGLE_REFRESH_TOKEN</code>:</p>
+                    <code>{$refreshToken}</code>
+                    <div class='instruction'>
+                        <p><strong>Step-by-step:</strong></p>
+                        <ol>
+                            <li>Copy the token above.</li>
+                            <li>Go to your Railway Dashboard.</li>
+                            <li>Add variable: <code>GOOGLE_REFRESH_TOKEN</code> = <i>[paste token]</i></li>
+                            <li>Change <code>MAIL_MAILER</code> to <code>gmail-api</code>.</li>
+                            <li>You're all set! All emails will now be sent securely via Gmail API.</li>
+                        </ol>
+                    </div>
+                </div>
+            </body>
+            </html>
+        ";
     }
 }
