@@ -28,6 +28,7 @@ export const tenantApi = {
     // Laravel bug: PUT/PATCH doesn't parse multipart/form-data. 
     // We use POST with _method spoofing if it's FormData.
     if (data instanceof FormData) {
+      data.append('_method', 'PUT');
       return api.post(`/api/v1/staff/menus/${id}`, data);
     }
     return api.put(`/api/v1/staff/menus/${id}`, data);
@@ -61,6 +62,12 @@ export const tenantApi = {
   // Staff management
   getStaffList: () =>
     api.get('/api/v1/owner/staff'),
+
+  getStaffListForStaff: () =>
+    api.get('/api/v1/staff/staff'),
+
+  getReportsForStaff: (params = {}) =>
+    api.get('/api/v1/staff/reports', { params }),
 
   createStaff: (data) =>
     api.post('/api/v1/owner/staff', data),

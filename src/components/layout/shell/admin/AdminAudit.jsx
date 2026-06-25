@@ -1,6 +1,17 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { reportApi } from '../../../../api/report';
+import { adminApi } from '../../../../api/admin';
+import toast from 'react-hot-toast';
+import { 
+  DocumentMagnifyingGlassIcon, 
+  ArrowDownTrayIcon, 
+  FunnelIcon, 
+  MagnifyingGlassIcon,
+  InformationCircleIcon,
+  ExclamationTriangleIcon,
+  CommandLineIcon,
+  BoltIcon
+} from '@heroicons/react/24/outline';
 
 const unwrapList = (r) => {
   const d = r?.data;
@@ -33,7 +44,7 @@ export default function AdminAudit() {
 
   const { data: raw, isLoading } = useQuery({
     queryKey: ['admin-audit-logs'],
-    queryFn: () => reportApi.getAuditLogs({ per_page: 50 }).catch(() => []),
+    queryFn: () => adminApi.getAuditLogs({ per_page: 50 }).catch(() => []),
     refetchInterval: 15000,
   });
   const logs = unwrapList(raw);
@@ -90,10 +101,15 @@ export default function AdminAudit() {
       )}
 
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-        <div style={{ fontSize: 16, fontWeight: 800, color: 'var(--text-100)' }}>Audit Log</div>
+        <div style={{ fontSize: 16, fontWeight: 800, color: 'var(--text-100)', display: 'flex', alignItems: 'center', gap: 8 }}>
+          <DocumentMagnifyingGlassIcon className="w-5 h-5" /> Audit Log
+        </div>
         <div style={{ display: 'flex', gap: 6 }}>
           <span className="badge badge-ok"><span className="badge-dot" />Live</span>
-          <input className="input" style={{ width: 180 }} placeholder="Cari log..." value={filter} onChange={e => setFilter(e.target.value)} />
+          <div style={{ position: 'relative' }}>
+            <MagnifyingGlassIcon className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+            <input className="input" style={{ width: 180, paddingLeft: 32 }} placeholder="Cari log..." value={filter} onChange={e => setFilter(e.target.value)} />
+          </div>
           <select className="input" style={{ width: 120 }} value={typeFilter} onChange={e => setTypeFilter(e.target.value)}>
             <option value="all">Semua Tipe</option>
             <option value="danger">DANGER</option>
@@ -101,13 +117,25 @@ export default function AdminAudit() {
             <option value="system">SYSTEM</option>
             <option value="auto">AUTO</option>
           </select>
-          <button className="btn btn-ghost btn-sm">↑ Export</button>
+          <button className="btn btn-ghost btn-sm" style={{ display: 'flex', alignItems: 'center', gap: 4 }}
+            onClick={async () => {
+              try {
+                const res = await adminApi.exportAuditLogs({ type: typeFilter !== 'all' ? typeFilter : undefined, search: filter || undefined });
+                const url = window.URL.createObjectURL(new Blob([res.data]));
+                const a = document.createElement('a');
+                a.href = url; a.download = `audit-log-${new Date().toISOString().slice(0,10)}.csv`;
+                a.click(); window.URL.revokeObjectURL(url);
+                toast.success('Audit log berhasil diekspor');
+              } catch { toast.error('Gagal mengekspor audit log'); }
+            }}>
+            <ArrowDownTrayIcon className="w-4 h-4" /> Export
+          </button>
         </div>
       </div>
 
       <div className="panel" style={{ marginBottom: 0 }}>
         <div className="panel-header">
-          <div className="panel-title">📜 Log Aktivitas</div>
+          <div className="panel-title" style={{ display: 'flex', alignItems: 'center', gap: 8 }}><CommandLineIcon className="w-4 h-4" /> Log Aktivitas</div>
           <span style={{ fontSize: 11, color: 'var(--text-400)' }}>
             {isLoading ? 'Memuat...' : `${filtered.length} entri`}
           </span>

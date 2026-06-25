@@ -23,7 +23,10 @@ class CheckoutController extends Controller
 
     public function checkout(Request $request)
     {
-        $request->validate(['notes' => 'nullable|string|max:500']);
+        $request->validate([
+            'notes' => 'nullable|string|max:500',
+            'payment_method' => 'nullable|string|in:midtrans,qris,bca,dana,cash',
+        ]);
 
         $cart = Order::where('user_id', $request->user()->id)
             ->where('status', 'cart')
@@ -59,6 +62,7 @@ class CheckoutController extends Controller
             $grandTotal  = $cart->total_amount + $serviceFee;
             $orderNumber = $this->orderService->generateOrderNumber();
             $expiresAt   = now()->addMinutes((int) \App\Models\SystemSetting::get('payment_timeout', 30));
+            $payMethod   = $request->payment_method ?? 'midtrans';
 
             $cart->update([
                 'order_number' => $orderNumber,
@@ -66,10 +70,31 @@ class CheckoutController extends Controller
                 'service_fee'  => $serviceFee,
                 'grand_total'  => $grandTotal,
                 'notes'        => $request->notes,
+                'payment_method' => $payMethod,
                 'expires_at'   => $expiresAt,
             ]);
 
-            $snapData = $this->midtrans->createSnapToken($cart->fresh(['items', 'user']));
+            $snapToken = null;
+            $paymentUrl = null;
+
+            if ($payMethod === 'midtrans') {
+                $snapData = $this->midtrans->createSnapToken($cart->fresh(['items', 'user']));
+                $snapToken = $snapData['snap_token'];
+                $paymentUrl = $snapData['payment_url'];
+            } else {
+                \App\Models\Payment::updateOrCreate(
+                    ['order_id' => $cart->id],
+                    [
+                        'transaction_id' => 'MANUAL-' . $orderNumber,
+                        'status'         => 'pending',
+                        'gross_amount'   => $grandTotal,
+                        'payment_type'   => $payMethod,
+                        'company_code'   => 'UNIV',
+                        'created_by'     => $request->user()->username,
+                        'updated_by'     => $request->user()->username,
+                    ]
+                );
+            }
             DB::commit();
 
             $this->notificationService->notifyOrderCreated($cart);
@@ -77,8 +102,8 @@ class CheckoutController extends Controller
 
             return $this->success([
                 'order'       => $cart->fresh(['items', 'tenant', 'payment']),
-                'snap_token'  => $snapData['snap_token'],
-                'payment_url' => $snapData['payment_url'],
+                'snap_token'  => $snapToken,
+                'payment_url' => $paymentUrl,
             ], 'Checkout berhasil');
         } catch (\Exception $e) {
             DB::rollBack();

@@ -238,6 +238,9 @@ class DatabaseSeeder extends Seeder
             SystemSetting::create(array_merge($setting, ['company_code' => 'UNIV', 'created_by' => 'system', 'updated_by' => 'system']));
         }
 
+        // ─── 6. ROLES & PERMISSIONS ────────────────────────────
+        $this->call(RolePermissionSeeder::class);
+
         $this->command->info('✅ KantinKita database seeded successfully!');
         $this->command->table(['Role', 'Email', 'Password'], [
             ['Admin',     'admin@kantinkita.com',    'password123'],

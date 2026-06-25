@@ -15,7 +15,9 @@ import { useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 
 const STATUS_COLOR = {
-  paid: 'info', processing: 'orange', completed: 'success',
+  paid:        'info',
+  processing:  'orange',
+  completed:   'success',
 };
 
 export default function StaffDashboard() {
@@ -37,7 +39,7 @@ export default function StaffDashboard() {
   useRealtime(tenantId ? `tenant.${tenantId}` : null, {
     NewOrderReceived: (order) => {
       playNotificationSound();
-      toast.success(`Pesanan baru dari ${order.customer}! #${order.order_number}`, { duration: 6000 });
+      toast.success(`Pesanan baru dari ${order.user?.full_name ?? 'Pelanggan'}! #${order.order_number}`, { duration: 6000 });
       qc.invalidateQueries({ queryKey: ['staff-orders'] });
     },
     OrderStatusChanged: () => {

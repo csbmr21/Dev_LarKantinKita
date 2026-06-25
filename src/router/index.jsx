@@ -6,6 +6,7 @@ import AppShell from '../components/layout/shell/AppShell';
 
 // ── Auth (Public) ─────────────────────────────────────────
 const Login           = lazy(() => import('../pages/auth/Login'));
+const CustomerLogin   = lazy(() => import('../pages/auth/CustomerLogin'));
 const Register        = lazy(() => import('../pages/auth/Register'));
 const GoogleCallback  = lazy(() => import('../pages/auth/GoogleCallback'));
 const OtpVerification = lazy(() => import('../pages/auth/OtpVerification'));
@@ -26,6 +27,7 @@ export default function AppRouter() {
     <Routes>
       {/* ── Public Auth Pages ──────────────────────── */}
       <Route path="/login"           element={<F><Login /></F>} />
+      <Route path="/customer-login"  element={<F><CustomerLogin /></F>} />
       <Route path="/register"        element={<F><Register /></F>} />
       <Route path="/auth/google/callback" element={<F><GoogleCallback /></F>} />
       <Route path="/auth/otp"        element={<F><OtpVerification /></F>} />

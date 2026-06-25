@@ -49,10 +49,14 @@ class RolePermissionSeeder extends Seeder
         $ownerPerms = \App\Models\Permission::whereIn('resource', ['Menu', 'Pesanan', 'Laporan'])->pluck('id');
         $roles['owner']->permissions()->sync($ownerPerms);
 
-        // Staff: Read Menu, Read/Update Pesanan
-        $staffPerms = \App\Models\Permission::where('resource', 'Menu')->where('slug', 'like', 'read-%')
-            ->orWhere('resource', 'Pesanan')->whereIn('slug', ['read-pesanan', 'update-pesanan'])
-            ->pluck('id');
+        // Staff / Kasir: Read+Update Menu (toggle stok), Read+Create+Update Pesanan (POS walk-in)
+        $staffPerms = \App\Models\Permission::whereIn('slug', [
+            'read-menu',
+            'update-menu',       // toggle ketersediaan menu di POS
+            'read-pesanan',
+            'create-pesanan',    // buat walk-in order dari POS kasir
+            'update-pesanan',    // update status pesanan (processing/completed/cancelled)
+        ])->pluck('id');
         $roles['staff']->permissions()->sync($staffPerms);
 
         // 4. Map existing users to role_id

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { adminApi } from '../../../../api/admin';
+import toast from 'react-hot-toast';
 
 const unwrapList = (r) => {
   const d = r?.data;
@@ -18,6 +19,7 @@ export default function AdminSubscriptions() {
   const qc = useQueryClient();
   const [modal, setModal] = useState(null); // { type: 'approve'|'reject'|'detail', sub: obj }
   const [adminNotes, setAdminNotes] = useState('');
+  const [durationMonths, setDurationMonths] = useState(1);
 
   const { data: statsRaw } = useQuery({
     queryKey: ['admin-sub-stats'],
@@ -31,12 +33,31 @@ export default function AdminSubscriptions() {
 
   const approveMut = useMutation({
     mutationFn: ({ id, data }) => adminApi.approveSubscription(id, data),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['admin-subscriptions'] }); setModal(null); setAdminNotes(''); },
+    onSuccess: () => { 
+      qc.invalidateQueries({ queryKey: ['admin-subscriptions'] }); 
+      qc.invalidateQueries({ queryKey: ['admin-sub-stats'] });
+      setModal(null); 
+      setAdminNotes(''); 
+      setDurationMonths(1);
+      toast.success('Persetujuan langganan berhasil disimpan');
+    },
+    onError: (err) => {
+      toast.error(err?.response?.data?.message || 'Gagal menyetujui langganan');
+    }
   });
 
   const rejectMut = useMutation({
     mutationFn: ({ id, data }) => adminApi.rejectSubscription(id, data),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['admin-subscriptions'] }); setModal(null); setAdminNotes(''); },
+    onSuccess: () => { 
+      qc.invalidateQueries({ queryKey: ['admin-subscriptions'] }); 
+      qc.invalidateQueries({ queryKey: ['admin-sub-stats'] });
+      setModal(null); 
+      setAdminNotes(''); 
+      toast.success('Persetujuan langganan berhasil ditolak');
+    },
+    onError: (err) => {
+      toast.error(err?.response?.data?.message || 'Gagal menolak langganan');
+    }
   });
 
   const stats = unwrapObj(statsRaw);
@@ -80,6 +101,22 @@ export default function AdminSubscriptions() {
                 <div className="metric-row"><span className="metric-name">Jumlah</span><span className="metric-val" style={{ color: 'var(--c-primary-400)', fontWeight: 800 }}>{fmt(modal.sub.amount ?? 0)}</span></div>
                 <div className="metric-row"><span className="metric-name">Tgl Request</span><span className="metric-val tx-mono">{modal.sub.created_at ? new Date(modal.sub.created_at).toLocaleDateString('id-ID') : '—'}</span></div>
                 
+                {modal.type === 'approve' && (
+                  <div className="fg" style={{ marginTop: 16, textAlign: 'left' }}>
+                    <label className="lbl">Durasi Aktif Paket</label>
+                    <select 
+                      className="input" 
+                      style={{ width: '100%', height: 40, padding: '0 12px', border: '1px solid var(--border-light)', borderRadius: 'var(--r-sm)', background: 'var(--bg-panel)', color: 'var(--text-main)', outline: 'none' }}
+                      value={durationMonths}
+                      onChange={(e) => setDurationMonths(parseInt(e.target.value))}
+                    >
+                      {[1, 3, 6, 12, 24].map((m) => (
+                        <option key={m} value={m} style={{ background: 'var(--bg-panel)', color: 'var(--text-main)' }}>{m} Bulan</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+
                 <div className="fg" style={{ marginTop: 16, textAlign: 'left' }}>
                   <label className="lbl">Catatan Admin (Opsional)</label>
                   <textarea 
@@ -92,13 +129,22 @@ export default function AdminSubscriptions() {
                 </div>
               </div>
               <div className="kk-modal-btns" style={{ marginTop: 24 }}>
-                <button className="btn-cancel" onClick={() => { setModal(null); setAdminNotes(''); }}>Batal</button>
+                <button className="btn-cancel" onClick={() => { setModal(null); setAdminNotes(''); setDurationMonths(1); }}>Batal</button>
                 <button 
                   className={`btn-confirm ${modal.type === 'reject' ? 'danger' : ''}`} 
                   disabled={approveMut.isPending || rejectMut.isPending} 
                   onClick={() => {
-                    const data = { admin_notes: adminNotes };
-                    modal.type === 'approve' ? approveMut.mutate({ id: modal.sub.id, data }) : rejectMut.mutate({ id: modal.sub.id, data });
+                    if (modal.type === 'approve') {
+                      approveMut.mutate({ 
+                        id: modal.sub.id, 
+                        data: { admin_notes: adminNotes, duration_months: durationMonths } 
+                      });
+                    } else {
+                      rejectMut.mutate({ 
+                        id: modal.sub.id, 
+                        data: { admin_notes: adminNotes } 
+                      });
+                    }
                   }}
                 >
                   {approveMut.isPending || rejectMut.isPending ? '⏳ Memproses...' : 'Ya, Lanjutkan'}

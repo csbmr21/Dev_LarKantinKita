@@ -15,17 +15,33 @@ class PermissionMiddleware
      */
     public function handle(Request $request, Closure $next, string $permission): mixed
     {
-        if (!$request->user()) {
+        $user = $request->user();
+        if (!$user) {
             return response()->json(['status' => false, 'message' => 'Unauthenticated.'], 401);
         }
 
-        if (!$request->user()->hasPermission($permission)) {
-            return response()->json([
-                'status' => false, 
-                'message' => "Anda tidak memiliki izin '{$permission}' untuk melakukan aksi ini."
-            ], 403);
+        // Get canonical role slug
+        $userRole = $user->getRoleSlug();
+
+        // 1. Administrator ALWAYS has all permissions
+        if ($userRole === 'admin' || $userRole === 'administrator') {
+            return $next($request);
         }
 
-        return $next($request);
+        // 2. Owners/Merchants ALWAYS have full access to their own tenant resources
+        // (Menus, Categories, Orders, etc.)
+        if ($userRole === 'owner' || $userRole === 'merchant') {
+            return $next($request);
+        }
+
+        // 3. Staff & Customers check explicit permissions
+        if ($user->hasPermission($permission)) {
+            return $next($request);
+        }
+
+        return response()->json([
+            'status' => false, 
+            'message' => "Akses ditolak. Anda memerlukan izin '{$permission}' untuk melakukan aksi ini."
+        ], 403);
     }
 }

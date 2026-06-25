@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuthStore } from '../../../store/authStore';
+import { useImpersonation } from '../../../hooks/useImpersonation';
 import { authApi } from '../../../api/auth';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
@@ -8,6 +9,7 @@ import CustomerView from './CustomerView';
 import KasirView from './KasirView';
 import MerchantView from './MerchantView';
 import AdminView from './AdminView';
+import ImpersonationBanner from '../../shared/ImpersonationBanner';
 import './shell.css';
 
 // Map user role -> view key
@@ -19,7 +21,8 @@ const ROLE_MAP = {
 };
 
 export default function AppShell() {
-  const { user, logout, getRole, isImpersonating, stopImpersonating } = useAuthStore();
+  const { user, logout, getRole } = useAuthStore();
+  const { isImpersonating, stopImpersonating } = useImpersonation();
   const navigate = useNavigate();
 
   const userRoleName = getRole() ?? 'customer';
@@ -34,7 +37,7 @@ export default function AppShell() {
   const handleLogout = async () => {
     // If impersonating, stop instead of full logout
     if (isImpersonating) {
-      stopImpersonating();
+      await stopImpersonating();
       return;
     }
     try { await authApi.logout(); } catch (_) {}
@@ -45,6 +48,7 @@ export default function AppShell() {
 
   return (
     <div className="kk-shell">
+      <ImpersonationBanner />
       <RoleBar
         activeRole={activeRole}
         onRoleChange={setActiveRole}
@@ -54,7 +58,7 @@ export default function AppShell() {
         onLogout={handleLogout}
       />
       <div className="kk-views">
-        {activeRole === 'customer'  && <div className="kk-view active"><CustomerView /></div>}
+        {activeRole === 'customer'  && <div className="kk-view kk-view-customer active"><CustomerView /></div>}
         {activeRole === 'kasir'     && <div className="kk-view active"><KasirView /></div>}
         {activeRole === 'merchant'  && <div className="kk-view active"><MerchantView /></div>}
         {activeRole === 'admin'     && <div className="kk-view active"><AdminView /></div>}

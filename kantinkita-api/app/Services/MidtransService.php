@@ -7,6 +7,7 @@ use Midtrans\Transaction;
 use App\Models\Order;
 use App\Models\Payment;
 use App\Models\SystemSetting;
+use Illuminate\Support\Facades\Auth;
 
 class MidtransService
 {
@@ -28,6 +29,34 @@ class MidtransService
 
     public function createSnapToken(Order $order): array
     {
+        $serverKey = config('services.midtrans.server_key');
+        $clientKey = config('services.midtrans.client_key');
+
+        if (empty($serverKey) || empty($clientKey) || $serverKey === 'your-midtrans-server-key' || $clientKey === 'your-midtrans-client-key') {
+            $snapToken = 'mock-snap-token-' . uniqid();
+
+            Payment::updateOrCreate(
+                ['order_id' => $order->id],
+                [
+                    'transaction_id' => $order->order_number,
+                    'status'         => 'pending',
+                    'gross_amount'   => $order->grand_total,
+                    'snap_token'     => $snapToken,
+                    'company_code'   => 'UNIV',
+                    'created_by'     => Auth::user()?->username ?? 'system',
+                    'updated_by'     => Auth::user()?->username ?? 'system',
+                ]
+            );
+
+            $isProduction = config('services.midtrans.mode') === 'production';
+            return [
+                'snap_token'  => $snapToken,
+                'payment_url' => $isProduction
+                    ? "https://app.midtrans.com/snap/v2/vtweb/{$snapToken}"
+                    : "https://app.sandbox.midtrans.com/snap/v2/vtweb/{$snapToken}",
+            ];
+        }
+
         $params = [
             'transaction_details' => [
                 'order_id'     => $order->order_number,
@@ -69,8 +98,8 @@ class MidtransService
                 'gross_amount'   => $order->grand_total,
                 'snap_token'     => $snapToken,
                 'company_code'   => 'UNIV',
-                'created_by'     => auth()->user()?->username ?? 'system',
-                'updated_by'     => auth()->user()?->username ?? 'system',
+                'created_by'     => Auth::user()?->username ?? 'system',
+                'updated_by'     => Auth::user()?->username ?? 'system',
             ]
         );
 
@@ -109,6 +138,9 @@ class MidtransService
 
         if ($newStatus && $order->status !== $newStatus) {
             $order->update(['status' => $newStatus, 'updated_by' => 'midtrans_webhook']);
+
+            // Broadcast status change for real-time frontend updates
+            event(new \App\Events\OrderStatusChanged($order->fresh(['items', 'user']), $newStatus));
 
             if ($newStatus === Order::STATUS_PAID) {
                 $payment->update(['status' => 'paid', 'paid_at' => now()]);

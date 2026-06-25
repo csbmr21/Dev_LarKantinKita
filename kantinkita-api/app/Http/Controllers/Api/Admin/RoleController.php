@@ -22,16 +22,23 @@ class RoleController extends Controller
     {
         $request->validate([
             'name'        => 'required|string|max:100',
+            'slug'        => 'nullable|string|max:100|unique:roles,slug',
             'description' => 'nullable|string',
+            'permissions' => 'nullable|array',
+            'permissions.*' => 'exists:permissions,id',
         ]);
 
         $role = Role::create([
             'name'        => $request->name,
-            'slug'        => Str::slug($request->name),
+            'slug'        => $request->slug ?: Str::slug($request->name),
             'description' => $request->description,
         ]);
 
-        return $this->success($role, 'Role berhasil dibuat', 201);
+        if ($request->has('permissions')) {
+            $role->permissions()->sync($request->permissions);
+        }
+
+        return $this->success($role->load('permissions'), 'Role berhasil dibuat', 201);
     }
 
     public function update(Request $request, int $id)
@@ -40,17 +47,24 @@ class RoleController extends Controller
 
         $request->validate([
             'name'        => 'sometimes|string|max:100',
+            'slug'        => "sometimes|string|max:100|unique:roles,slug,{$id}",
             'description' => 'nullable|string',
+            'permissions' => 'nullable|array',
+            'permissions.*' => 'exists:permissions,id',
         ]);
 
-        $data = $request->only(['name', 'description']);
-        if (isset($data['name'])) {
+        $data = $request->only(['name', 'description', 'slug']);
+        if (isset($data['name']) && !isset($data['slug'])) {
             $data['slug'] = Str::slug($data['name']);
         }
 
         $role->update($data);
 
-        return $this->success($role, 'Role berhasil diperbarui');
+        if ($request->has('permissions')) {
+            $role->permissions()->sync($request->permissions);
+        }
+
+        return $this->success($role->load('permissions'), 'Role berhasil diperbarui');
     }
 
     public function destroy(int $id)

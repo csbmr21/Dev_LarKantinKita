@@ -7,7 +7,7 @@ class Tenant extends BaseModel
 {
     use HasFactory;
 
-    protected $appends = ['photo_url'];
+    protected $appends = ['photo_url', 'banner_url'];
 
     protected $casts = [
         'is_open'       => 'boolean',
@@ -28,5 +28,10 @@ class Tenant extends BaseModel
     public function getPhotoUrlAttribute(): ?string
     {
         return $this->photo ? asset('storage/' . $this->photo) : null;
+    }
+
+    public function getBannerUrlAttribute(): ?string
+    {
+        return $this->banner ? asset('storage/' . $this->banner) : null;
     }
 }

@@ -13,7 +13,7 @@ class ReportService
     {
         $orders = Order::with(['items', 'payment', 'user'])
             ->where('tenant_id', $tenantId)
-            ->where('status', Order::STATUS_COMPLETED)
+            ->whereIn('status', [Order::STATUS_PAID, Order::STATUS_PROCESSING, Order::STATUS_COMPLETED])
             ->whereBetween('created_at', [
                 Carbon::parse($startDate)->startOfDay(),
                 Carbon::parse($endDate)->endOfDay(),
@@ -84,7 +84,7 @@ class ReportService
     public function getAggregate(string $startDate, string $endDate): array
     {
         $orders = Order::with('tenant')
-            ->where('status', Order::STATUS_COMPLETED)
+            ->whereIn('status', [Order::STATUS_PAID, Order::STATUS_PROCESSING, Order::STATUS_COMPLETED])
             ->whereBetween('created_at', [Carbon::parse($startDate)->startOfDay(), Carbon::parse($endDate)->endOfDay()])
             ->get();
 

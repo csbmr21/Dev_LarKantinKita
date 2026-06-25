@@ -1,0 +1,1492 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>KantinKita — Part 1: Customer App</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* ============================================================
+   DESIGN TOKENS
+   ============================================================ */
+:root {
+  --c-primary-900:#081C0F; --c-primary-800:#1B4332; --c-primary-700:#2D6A4F;
+  --c-primary-600:#40916C; --c-primary-500:#52B788; --c-primary-400:#74C69D;
+  --c-primary-200:#B7E4C7; --c-primary-100:#D8F3DC; --c-primary-50:#F0FBF3;
+  --c-amber-600:#D97706; --c-amber-500:#F59E0B; --c-amber-400:#FBBF24;
+  --c-amber-200:#FDE68A; --c-amber-100:#FEF3C7;
+  --c-red-600:#DC2626; --c-red-500:#EF4444; --c-red-200:#FECACA; --c-red-100:#FEE2E2;
+  --c-emerald-600:#059669; --c-emerald-500:#10B981; --c-emerald-100:#D1FAE5;
+  --c-blue-600:#2563EB; --c-blue-500:#3B82F6; --c-blue-100:#DBEAFE;
+  --c-violet-500:#8B5CF6; --c-violet-100:#EDE9FE;
+  --c-neutral-950:#030712; --c-neutral-900:#0F1117; --c-neutral-850:#141920;
+  --c-neutral-800:#1C2333; --c-neutral-700:#252E3F; --c-neutral-600:#374151;
+  --c-neutral-500:#6B7280; --c-neutral-400:#9CA3AF; --c-neutral-300:#D1D5DB;
+  --c-neutral-200:#E5E7EB; --c-neutral-100:#F3F4F6; --c-neutral-50:#F9FAFB;
+  --c-white:#FFFFFF;
+  --color-bg:var(--c-neutral-50); --color-surface:var(--c-white);
+  --color-border:var(--c-neutral-200); --color-border-light:var(--c-neutral-100);
+  --color-text-primary:#111827; --color-text-secondary:var(--c-neutral-500);
+  --color-text-muted:var(--c-neutral-400);
+  --font-sans:'Plus Jakarta Sans',system-ui,sans-serif;
+  --font-mono:'JetBrains Mono',monospace;
+  --text-xs:11px; --text-sm:13px; --text-base:15px; --text-md:16px;
+  --text-lg:18px; --text-xl:20px; --text-2xl:24px; --text-3xl:28px;
+  --fw-regular:400; --fw-medium:500; --fw-semibold:600; --fw-bold:700; --fw-extrabold:800;
+  --lh-tight:1.2; --lh-snug:1.4; --lh-normal:1.6;
+  --sp-1:4px; --sp-2:8px; --sp-3:12px; --sp-4:16px; --sp-5:20px;
+  --sp-6:24px; --sp-8:32px; --sp-10:40px; --sp-12:48px; --sp-16:64px;
+  --r-sm:6px; --r-md:10px; --r-lg:14px; --r-xl:20px; --r-2xl:28px; --r-full:9999px;
+  --shadow-xs:0 1px 2px rgba(0,0,0,0.04);
+  --shadow-sm:0 1px 4px rgba(0,0,0,0.06),0 1px 2px rgba(0,0,0,0.04);
+  --shadow-md:0 4px 12px rgba(0,0,0,0.08),0 2px 4px rgba(0,0,0,0.04);
+  --shadow-lg:0 12px 32px rgba(0,0,0,0.12),0 4px 8px rgba(0,0,0,0.06);
+  --shadow-xl:0 24px 64px rgba(0,0,0,0.16),0 8px 16px rgba(0,0,0,0.08);
+  --btn-height-sm:32px; --btn-height-md:40px; --btn-height-lg:48px;
+  --input-height:40px; --sidebar-width:228px; --topbar-height:56px;
+}
+
+/* ============================================================ RESET */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{-webkit-font-smoothing:antialiased}
+body{font-family:var(--font-sans);font-size:var(--text-base);line-height:var(--lh-normal);background:#0A0E14;color:var(--color-text-primary);overflow:hidden;height:100vh}
+button,input,select,textarea{font-family:inherit}
+img{display:block;max-width:100%}
+
+/* ============================================================
+   APP SHELL — Role Switcher
+   ============================================================ */
+.app-shell{display:flex;flex-direction:column;height:100vh}
+.role-bar{
+  background:#040810;border-bottom:1px solid rgba(255,255,255,0.07);
+  padding:0 24px;display:flex;align-items:center;height:48px;gap:16px;flex-shrink:0;z-index:1000
+}
+.role-bar-logo{display:flex;align-items:center;gap:8px;margin-right:12px}
+.role-logo-mark{width:28px;height:28px;background:var(--c-primary-700);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:white}
+.role-logo-text{font-size:15px;font-weight:800;color:white;letter-spacing:-0.3px}
+.role-logo-ver{background:rgba(82,183,136,0.15);color:var(--c-primary-400);font-size:10px;font-weight:700;padding:2px 6px;border-radius:4px}
+.role-bar-sep{color:rgba(255,255,255,0.15);font-size:18px}
+.role-bar-label{font-size:11px;font-weight:600;color:rgba(255,255,255,0.25);letter-spacing:1px;text-transform:uppercase;white-space:nowrap}
+.role-tabs{display:flex;gap:4px}
+.role-tab{
+  display:flex;align-items:center;gap:6px;padding:6px 14px;border-radius:var(--r-full);
+  font-size:12px;font-weight:700;cursor:pointer;border:1.5px solid transparent;
+  transition:all .2s;color:rgba(255,255,255,0.4);background:transparent;white-space:nowrap
+}
+.role-tab:hover{color:rgba(255,255,255,0.75);background:rgba(255,255,255,0.05)}
+.role-tab.active{background:rgba(45,106,79,0.2);border-color:rgba(45,106,79,0.4);color:var(--c-primary-400)}
+.role-tab-dot{width:6px;height:6px;border-radius:50%;background:currentColor;opacity:0.7}
+.role-bar-right{margin-left:auto;display:flex;align-items:center;gap:12px}
+.sandbox-badge{background:rgba(245,158,11,0.12);border:1px solid rgba(245,158,11,0.25);color:var(--c-amber-400);font-size:10px;font-weight:700;padding:3px 8px;border-radius:4px;letter-spacing:0.5px}
+.part-badge{background:rgba(59,130,246,0.12);border:1px solid rgba(59,130,246,0.25);color:#93C5FD;font-size:10px;font-weight:700;padding:3px 8px;border-radius:4px}
+
+.views-container{flex:1;overflow:hidden;position:relative}
+.view{position:absolute;inset:0;display:none}
+.view.active{display:flex}
+
+/* ============================================================
+   SHARED COMPONENTS
+   ============================================================ */
+/* Buttons */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:var(--sp-2);height:var(--btn-height-md);padding:0 var(--sp-5);border-radius:var(--r-md);font-size:var(--text-sm);font-weight:var(--fw-bold);cursor:pointer;border:1.5px solid transparent;transition:all .18s;white-space:nowrap;line-height:1;text-decoration:none}
+.btn:disabled{opacity:0.4;cursor:not-allowed;pointer-events:none}
+.btn-primary{background:var(--c-primary-700);color:white;border-color:var(--c-primary-700)}
+.btn-primary:hover{background:var(--c-primary-800);transform:translateY(-1px);box-shadow:0 4px 16px rgba(45,106,79,0.35)}
+.btn-secondary{background:transparent;color:var(--c-primary-600);border-color:var(--c-primary-600)}
+.btn-secondary:hover{background:var(--c-primary-100);color:var(--c-primary-800)}
+.btn-danger{background:var(--c-red-500);color:white;border-color:var(--c-red-500)}
+.btn-danger:hover{background:var(--c-red-600);transform:translateY(-1px)}
+.btn-ghost-light{background:rgba(255,255,255,0.12);color:white;border-color:rgba(255,255,255,0.2)}
+.btn-ghost-light:hover{background:rgba(255,255,255,0.2)}
+.btn-sm{height:var(--btn-height-sm);padding:0 var(--sp-3);font-size:var(--text-xs);border-radius:var(--r-sm)}
+.btn-lg{height:var(--btn-height-lg);padding:0 var(--sp-8);font-size:var(--text-base)}
+.btn-block{width:100%}
+/* Badges */
+.badge{display:inline-flex;align-items:center;gap:5px;padding:3px 8px;border-radius:var(--r-full);font-size:11px;font-weight:700}
+.badge-dot{width:5px;height:5px;border-radius:50%;background:currentColor}
+.badge-success{background:var(--c-emerald-100);color:#065F46}
+.badge-warning{background:var(--c-amber-100);color:#92400E}
+.badge-error{background:var(--c-red-100);color:#991B1B}
+.badge-info{background:var(--c-blue-100);color:#1E40AF}
+.badge-neutral{background:var(--c-neutral-100);color:var(--c-neutral-600)}
+.badge-violet{background:var(--c-violet-100);color:#5B21B6}
+/* Inputs */
+.input{width:100%;height:var(--input-height);padding:0 var(--sp-3);background:white;border:1.5px solid var(--color-border);border-radius:var(--r-md);font-size:var(--text-sm);color:var(--color-text-primary);outline:none;transition:border-color .15s,box-shadow .15s}
+.input:focus{border-color:var(--c-primary-600);box-shadow:0 0 0 3px rgba(64,145,108,0.15)}
+.input::placeholder{color:var(--color-text-muted)}
+.input-sm{height:36px;font-size:var(--text-xs)}
+.form-label{font-size:12px;font-weight:700;color:var(--color-text-secondary);margin-bottom:6px;display:block}
+.form-group{margin-bottom:14px}
+.form-hint{font-size:11px;color:var(--color-text-muted);margin-top:4px}
+/* Toggle */
+.toggle{width:40px;height:22px;border-radius:var(--r-full);cursor:pointer;transition:background .2s;position:relative;flex-shrink:0;border:none;outline:none}
+.toggle::after{content:'';position:absolute;width:16px;height:16px;border-radius:50%;background:white;top:3px;box-shadow:0 1px 3px rgba(0,0,0,0.2);transition:left .2s cubic-bezier(.4,0,.2,1)}
+.toggle.on{background:var(--c-emerald-500)} .toggle.on::after{left:calc(100% - 19px)}
+.toggle.off{background:var(--c-neutral-300)} .toggle.off::after{left:3px}
+/* Qty stepper */
+.qty-stepper{display:inline-flex;align-items:center;background:var(--c-neutral-50);border:1.5px solid var(--color-border);border-radius:var(--r-md);overflow:hidden;height:36px}
+.qty-btn{width:36px;height:100%;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:700;color:var(--c-primary-700);background:transparent;border:none;cursor:pointer;transition:background .15s;user-select:none}
+.qty-btn:hover{background:var(--c-primary-100)}
+.qty-val{width:36px;text-align:center;font-size:13px;font-weight:700;color:var(--color-text-primary);border-left:1.5px solid var(--color-border);border-right:1.5px solid var(--color-border);background:white;height:100%;display:flex;align-items:center;justify-content:center}
+/* Toast */
+.toast-container{position:fixed;bottom:20px;right:20px;z-index:9999;display:flex;flex-direction:column;gap:8px;pointer-events:none}
+.toast{display:flex;align-items:flex-start;gap:12px;padding:12px 16px;background:white;border:1px solid var(--color-border);border-radius:var(--r-lg);box-shadow:var(--shadow-lg);max-width:320px;width:100%;animation:toastIn .25s ease;pointer-events:all}
+.toast-icon-w{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0}
+.toast-body{flex:1}
+.toast-title{font-size:13px;font-weight:700;color:var(--color-text-primary);margin-bottom:2px}
+.toast-msg{font-size:11px;color:var(--color-text-secondary);line-height:1.4}
+.toast.success{border-left:3px solid var(--c-emerald-500)} .toast.success .toast-icon-w{background:var(--c-emerald-100);color:#065F46}
+.toast.error{border-left:3px solid var(--c-red-500)} .toast.error .toast-icon-w{background:var(--c-red-100);color:#991B1B}
+.toast.warning{border-left:3px solid var(--c-amber-500)} .toast.warning .toast-icon-w{background:var(--c-amber-100);color:#92400E}
+.toast.info{border-left:3px solid var(--c-blue-500)} .toast.info .toast-icon-w{background:var(--c-blue-100);color:#1E40AF}
+@keyframes toastIn{from{opacity:0;transform:translateX(20px)}to{opacity:1;transform:translateX(0)}}
+/* Modal */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.5);backdrop-filter:blur(4px);z-index:8000;display:flex;align-items:center;justify-content:center;padding:20px;opacity:0;pointer-events:none;transition:opacity .2s}
+.modal-overlay.open{opacity:1;pointer-events:all}
+.modal-box{background:white;border-radius:var(--r-xl);padding:var(--sp-6);width:100%;max-width:400px;box-shadow:var(--shadow-xl);transform:scale(0.95);transition:transform .2s}
+.modal-overlay.open .modal-box{transform:scale(1)}
+.modal-icon{width:52px;height:52px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:24px;margin-bottom:16px}
+.modal-icon.success{background:var(--c-emerald-100)} .modal-icon.danger{background:var(--c-red-100)} .modal-icon.warning{background:var(--c-amber-100)}
+.modal-title{font-size:20px;font-weight:800;color:var(--color-text-primary);margin-bottom:8px}
+.modal-body{font-size:14px;color:var(--color-text-secondary);line-height:1.6;margin-bottom:20px}
+.modal-actions{display:flex;gap:12px}
+.modal-btn{flex:1;height:40px;border-radius:var(--r-md);font-size:14px;font-weight:700;cursor:pointer;border:none;transition:all .15s}
+.modal-btn.cancel{background:var(--c-neutral-100);color:var(--color-text-secondary);border:1.5px solid var(--color-border)}
+.modal-btn.confirm{background:var(--c-primary-700);color:white}
+.modal-btn.danger{background:var(--c-red-500);color:white}
+.modal-btn.cancel:hover{background:var(--c-neutral-200)}
+.modal-btn.confirm:hover{background:var(--c-primary-800)}
+.modal-btn.danger:hover{background:var(--c-red-600)}
+/* Divider */
+.divider{display:flex;align-items:center;gap:12px;color:var(--color-text-muted);font-size:11px}
+.divider::before,.divider::after{content:'';flex:1;height:1px;background:var(--color-border)}
+
+/* ============================================================
+   PHONE FRAME
+   ============================================================ */
+#view-customer{
+  background:radial-gradient(ellipse at 30% 20%,rgba(45,106,79,0.12) 0%,transparent 60%),#080C12;
+  align-items:flex-start;justify-content:center;
+  overflow-y:auto;padding:24px 20px;gap:28px;flex-wrap:wrap
+}
+.phone-wrap{display:flex;flex-direction:column;align-items:center;gap:10px;flex-shrink:0}
+.phone-label{font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,0.25)}
+.phone-frame{
+  width:375px;background:#161B24;border-radius:44px;
+  border:1.5px solid rgba(255,255,255,0.1);
+  box-shadow:0 0 0 6px rgba(255,255,255,0.02),0 40px 80px rgba(0,0,0,0.6),inset 0 1px 0 rgba(255,255,255,0.06);
+  overflow:hidden;flex-shrink:0
+}
+.phone-frame.sm{width:340px}
+.phone-notch-bar{height:36px;background:#0F131A;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.phone-notch{width:110px;height:22px;background:#0F131A;border-radius:0 0 14px 14px;border:1.5px solid rgba(255,255,255,0.07);border-top:none}
+.phone-screen{background:var(--c-neutral-50);overflow:hidden;display:flex;flex-direction:column}
+/* App Status Bar */
+.app-status{height:28px;background:white;display:flex;align-items:center;justify-content:space-between;padding:0 20px;flex-shrink:0}
+.status-time{font-size:11px;font-weight:700;color:var(--color-text-primary)}
+.status-icons{display:flex;gap:4px;align-items:center;font-size:11px}
+/* App header */
+.app-header{height:52px;background:white;border-bottom:1px solid var(--color-border-light);display:flex;align-items:center;justify-content:space-between;padding:0 16px;flex-shrink:0}
+.app-header-title{font-size:15px;font-weight:800;color:var(--color-text-primary);letter-spacing:-0.2px}
+.app-logo-row{display:flex;align-items:center;gap:8px}
+.app-logo-mark{width:30px;height:30px;background:var(--c-primary-700);border-radius:var(--r-sm);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;color:white}
+.app-logo-text{font-size:15px;font-weight:800;color:var(--color-text-primary);letter-spacing:-0.3px}
+.app-icon-btn{width:34px;height:34px;border-radius:50%;background:var(--c-neutral-100);border:none;display:flex;align-items:center;justify-content:center;font-size:15px;cursor:pointer;transition:background .15s;flex-shrink:0}
+.app-icon-btn:hover{background:var(--c-primary-100)}
+.app-icon-btn.back{background:transparent;font-size:18px}
+/* Bottom nav */
+.bottom-nav{height:64px;background:white;border-top:1px solid var(--color-border-light);display:flex;align-items:flex-start;padding-top:8px;flex-shrink:0}
+.nav-tab{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;padding-top:4px}
+.nav-tab-icon{font-size:20px}
+.nav-tab-label{font-size:10px;font-weight:700;color:var(--color-text-muted)}
+.nav-tab.active .nav-tab-label{color:var(--c-primary-700)}
+.nav-tab-pip{width:4px;height:4px;border-radius:50%;background:var(--c-primary-700);margin-top:1px}
+/* App body */
+.app-body{overflow-y:auto;flex:1;-webkit-overflow-scrolling:touch}
+.app-body::-webkit-scrollbar{display:none}
+/* Screens */
+.app-screen{display:none;flex-direction:column;height:100%;overflow:hidden}
+.app-screen.active{display:flex}
+/* Search bar */
+.app-search-bar{padding:10px 16px;background:white;border-bottom:1px solid var(--color-border-light);display:flex;gap:8px;flex-shrink:0}
+.search-inner{flex:1;position:relative}
+.app-search{width:100%;height:38px;padding:0 12px 0 36px;background:var(--c-neutral-50);border:1.5px solid var(--color-border);border-radius:var(--r-md);font-size:13px;outline:none;font-family:inherit;color:var(--color-text-primary);transition:border-color .15s}
+.app-search:focus{border-color:var(--c-primary-500)}
+.app-search::placeholder{color:var(--color-text-muted)}
+.search-icon{position:absolute;left:10px;top:50%;transform:translateY(-50%);font-size:14px;color:var(--color-text-muted);pointer-events:none}
+.filter-btn{width:38px;height:38px;background:var(--c-primary-700);border:none;border-radius:var(--r-md);display:flex;align-items:center;justify-content:center;color:white;font-size:14px;cursor:pointer;flex-shrink:0}
+/* Pill tabs */
+.pill-tabs{display:flex;gap:6px;padding:10px 16px;overflow-x:auto;background:white;flex-shrink:0}
+.pill-tabs::-webkit-scrollbar{display:none}
+.pill-tab{padding:6px 14px;border-radius:var(--r-full);font-size:12px;font-weight:700;cursor:pointer;border:1.5px solid var(--color-border);background:white;color:var(--color-text-secondary);transition:all .15s;white-space:nowrap;flex-shrink:0}
+.pill-tab.active{background:var(--c-primary-700);border-color:var(--c-primary-700);color:white}
+.pill-tab:hover:not(.active){background:var(--c-neutral-50)}
+
+/* ============================================================
+   CUSTOMER — HOME SCREEN
+   ============================================================ */
+.home-banner{
+  background:linear-gradient(135deg,var(--c-primary-800),var(--c-primary-600));
+  padding:16px;margin:12px;border-radius:var(--r-lg);position:relative;overflow:hidden;flex-shrink:0
+}
+.home-banner::after{content:'🍛';position:absolute;right:12px;bottom:-4px;font-size:52px;opacity:0.25}
+.home-banner-tag{background:rgba(255,255,255,0.15);color:white;font-size:10px;font-weight:700;padding:3px 8px;border-radius:var(--r-full);display:inline-block;margin-bottom:6px}
+.home-banner-title{font-size:16px;font-weight:800;color:white;margin-bottom:4px;line-height:1.3}
+.home-banner-sub{font-size:11px;color:rgba(255,255,255,0.7);margin-bottom:12px}
+.home-banner-btn{background:white;color:var(--c-primary-700);border:none;border-radius:var(--r-md);padding:7px 14px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit}
+.home-section-title{font-size:14px;font-weight:800;color:var(--color-text-primary);padding:12px 16px 8px;flex-shrink:0}
+/* Product grid */
+.product-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:0 12px 12px}
+.product-card{background:white;border:1px solid var(--color-border);border-radius:var(--r-lg);overflow:hidden;cursor:pointer;transition:all .2s;box-shadow:var(--shadow-xs)}
+.product-card:hover{transform:translateY(-2px);box-shadow:var(--shadow-md);border-color:var(--c-primary-200)}
+.product-card:active{transform:scale(0.97)}
+.product-thumb{height:90px;display:flex;align-items:center;justify-content:center;font-size:40px;background:var(--c-neutral-50);border-bottom:1px solid var(--color-border-light);position:relative}
+.product-badge{position:absolute;top:6px;left:6px;font-size:9px;font-weight:700;padding:2px 6px;border-radius:var(--r-full)}
+.product-info{padding:10px}
+.product-name{font-size:12px;font-weight:700;color:var(--color-text-primary);margin-bottom:2px;line-height:1.3}
+.product-canteen{font-size:10px;color:var(--color-text-muted);margin-bottom:5px}
+.product-footer{display:flex;align-items:center;justify-content:space-between}
+.product-price{font-size:13px;font-weight:800;color:var(--c-primary-700)}
+.product-add{width:26px;height:26px;background:var(--c-primary-700);color:white;border:none;border-radius:50%;font-size:18px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .15s;flex-shrink:0}
+.product-add:hover{background:var(--c-primary-800)}
+.product-add.in-cart{background:var(--c-emerald-500)}
+/* Cart floating bar */
+.cart-bar{display:none;background:var(--c-primary-700);padding:10px 14px;cursor:pointer;margin:0 12px 8px;border-radius:var(--r-lg);transition:background .15s;flex-shrink:0}
+.cart-bar:hover{background:var(--c-primary-800)}
+.cart-bar.visible{display:flex;align-items:center;gap:10px}
+.cart-count{background:var(--c-amber-400);color:#1A1200;width:22px;height:22px;border-radius:50%;font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.cart-label{color:white;font-size:13px;font-weight:700;flex:1}
+.cart-total{color:white;font-size:14px;font-weight:800}
+/* Canteen horizontal list */
+.canteen-row{display:flex;gap:10px;padding:0 16px 12px;overflow-x:auto}
+.canteen-row::-webkit-scrollbar{display:none}
+.canteen-card{background:white;border:1px solid var(--color-border);border-radius:var(--r-lg);padding:12px;min-width:130px;cursor:pointer;transition:all .2s;box-shadow:var(--shadow-xs);flex-shrink:0}
+.canteen-card:hover{border-color:var(--c-primary-400);box-shadow:var(--shadow-sm)}
+.canteen-icon{font-size:24px;margin-bottom:6px}
+.canteen-name{font-size:12px;font-weight:700;color:var(--color-text-primary);margin-bottom:2px}
+.canteen-meta{font-size:10px;color:var(--color-text-muted)}
+
+/* ============================================================
+   CUSTOMER — PRODUCT DETAIL
+   ============================================================ */
+.product-detail-hero{height:200px;display:flex;align-items:center;justify-content:center;font-size:90px;position:relative;overflow:hidden;flex-shrink:0}
+.detail-bg-gradient{position:absolute;inset:0;background:linear-gradient(135deg,var(--c-primary-50),var(--c-primary-100))}
+.detail-emoji{position:relative;z-index:1}
+.detail-favorite{position:absolute;top:12px;right:12px;z-index:2;width:36px;height:36px;background:white;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;cursor:pointer;box-shadow:var(--shadow-sm);border:none}
+.detail-body{padding:16px;overflow-y:auto;flex:1}
+.detail-header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:8px}
+.detail-name{font-size:18px;font-weight:800;color:var(--color-text-primary);line-height:1.2}
+.detail-price{font-size:20px;font-weight:800;color:var(--c-primary-700);white-space:nowrap;margin-left:12px}
+.detail-canteen{font-size:12px;color:var(--color-text-muted);margin-bottom:12px}
+.detail-desc{font-size:13px;color:var(--color-text-secondary);line-height:1.6;margin-bottom:16px}
+.detail-section-label{font-size:13px;font-weight:700;color:var(--color-text-primary);margin-bottom:10px}
+.option-list{display:flex;flex-direction:column;gap:8px;margin-bottom:16px}
+.option-item{display:flex;align-items:center;gap:10px;padding:10px 12px;border:1.5px solid var(--color-border);border-radius:var(--r-md);cursor:pointer;transition:all .15s;background:white}
+.option-item.selected{border-color:var(--c-primary-600);background:var(--c-primary-50)}
+.option-item-label{font-size:13px;font-weight:700;flex:1}
+.option-item-price{font-size:12px;color:var(--color-text-secondary);font-weight:600}
+.option-radio{width:16px;height:16px;border-radius:50%;border:2px solid var(--color-border);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.option-radio.checked{border-color:var(--c-primary-700);background:var(--c-primary-700)}
+.detail-footer{padding:14px 16px;background:white;border-top:1px solid var(--color-border-light);display:flex;gap:12px;align-items:center;flex-shrink:0}
+.detail-qty-wrap{display:flex;flex-direction:column;gap:2px}
+.detail-qty-label{font-size:10px;font-weight:700;color:var(--color-text-muted);text-transform:uppercase;letter-spacing:0.8px}
+.detail-add-btn{flex:1;height:44px;background:var(--c-primary-700);color:white;border:none;border-radius:var(--r-md);font-size:13px;font-weight:800;cursor:pointer;transition:background .15s;font-family:inherit}
+.detail-add-btn:hover{background:var(--c-primary-800)}
+
+/* ============================================================
+   CUSTOMER — CART SCREEN
+   ============================================================ */
+.cart-items-wrap{flex:1;overflow-y:auto}
+.cart-item{display:flex;align-items:center;gap:10px;background:white;border-bottom:1px solid var(--color-border-light);padding:12px 16px}
+.cart-item-thumb{width:54px;height:54px;border-radius:var(--r-md);background:var(--c-neutral-100);display:flex;align-items:center;justify-content:center;font-size:26px;flex-shrink:0}
+.cart-item-info{flex:1}
+.cart-item-name{font-size:13px;font-weight:700;color:var(--color-text-primary);margin-bottom:2px}
+.cart-item-variant{font-size:11px;color:var(--color-text-muted);margin-bottom:4px}
+.cart-item-price{font-size:13px;font-weight:700;color:var(--c-primary-700)}
+.cart-item-ctrl{display:flex;align-items:center;gap:6px}
+.cart-qty-btn{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:700;cursor:pointer;border:1.5px solid var(--color-border);background:white;line-height:1;transition:all .12s;flex-shrink:0}
+.cart-qty-btn.minus{color:var(--c-red-500);border-color:var(--c-red-200)}
+.cart-qty-btn.minus:hover{background:var(--c-red-100)}
+.cart-qty-btn.plus{background:var(--c-primary-700);color:white;border-color:var(--c-primary-700)}
+.cart-qty-btn.plus:hover{background:var(--c-primary-800)}
+.cart-qty-num{width:20px;text-align:center;font-size:13px;font-weight:800}
+.cart-empty-state{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;color:var(--color-text-muted);font-size:13px;padding:40px;text-align:center}
+.cart-empty-icon{font-size:48px;opacity:0.4}
+.cart-empty-title{font-weight:800;font-size:16px;color:var(--color-text-primary)}
+/* Order notes */
+.cart-notes{padding:12px 16px;background:white;border-top:1px solid var(--color-border-light);flex-shrink:0}
+.cart-notes textarea{width:100%;height:60px;border:1.5px solid var(--color-border);border-radius:var(--r-md);padding:8px 12px;font-size:12px;font-family:inherit;resize:none;outline:none;color:var(--color-text-primary)}
+.cart-notes textarea:focus{border-color:var(--c-primary-500)}
+.cart-notes textarea::placeholder{color:var(--color-text-muted)}
+/* Summary */
+.cart-summary{background:white;border-top:1px solid var(--color-border-light);padding:16px;flex-shrink:0}
+.summary-row{display:flex;justify-content:space-between;align-items:center;padding:5px 0}
+.summary-key{font-size:13px;color:var(--color-text-secondary)}
+.summary-val{font-size:13px;font-weight:600;color:var(--color-text-primary)}
+.summary-val.green{color:var(--c-emerald-600)}
+.summary-divider{height:1px;background:var(--color-border-light);margin:8px 0}
+.summary-total{display:flex;justify-content:space-between;align-items:center;padding-top:4px}
+.summary-total-key{font-size:15px;font-weight:700;color:var(--color-text-primary)}
+.summary-total-val{font-size:22px;font-weight:800;color:var(--c-primary-700);letter-spacing:-0.5px}
+/* Payment method chooser */
+.payment-section{padding:12px 16px;background:var(--c-neutral-50);border-top:1px solid var(--color-border-light);flex-shrink:0}
+.payment-section-label{font-size:11px;font-weight:700;color:var(--color-text-muted);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:8px}
+.payment-options{display:flex;flex-direction:column;gap:6px}
+.payment-option{display:flex;align-items:center;gap:10px;padding:10px 12px;border:1.5px solid var(--color-border);border-radius:var(--r-md);cursor:pointer;transition:all .15s;background:white}
+.payment-option.selected{border-color:var(--c-primary-600);background:var(--c-primary-50)}
+.payment-logo{width:36px;height:24px;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;color:white;flex-shrink:0;letter-spacing:0.5px}
+.payment-name{font-size:13px;font-weight:700;flex:1}
+.payment-balance{font-size:11px;color:var(--c-emerald-500);font-weight:600}
+.payment-radio{width:16px;height:16px;border-radius:50%;border:2px solid var(--color-border);margin-left:auto;flex-shrink:0;display:flex;align-items:center;justify-content:center}
+.payment-radio.checked{border-color:var(--c-primary-700);background:var(--c-primary-700)}
+
+/* ============================================================
+   CUSTOMER — TRACKING SCREEN
+   ============================================================ */
+.tracking-banner{background:linear-gradient(135deg,var(--c-primary-800),var(--c-primary-600));padding:24px 16px;text-align:center;flex-shrink:0}
+.tracking-emoji{font-size:48px;display:block;margin-bottom:8px;animation:trackingBob 2s ease-in-out infinite}
+@keyframes trackingBob{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+.tracking-status-text{font-size:20px;font-weight:800;color:white;margin-bottom:4px}
+.tracking-eta{font-size:12px;color:rgba(255,255,255,0.6);margin-bottom:12px}
+.tracking-id{display:inline-block;background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.18);color:rgba(255,255,255,0.85);font-family:var(--font-mono);font-size:11px;padding:4px 12px;border-radius:var(--r-full)}
+.tracking-progress{padding:20px 16px;background:white;border-bottom:1px solid var(--color-border-light);flex-shrink:0}
+.steps-row{display:flex;align-items:center}
+.step-node{display:flex;flex-direction:column;align-items:center;gap:6px}
+.step-circle{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700}
+.step-done{background:var(--c-emerald-500);color:white}
+.step-active{background:var(--c-primary-700);color:white;box-shadow:0 0 0 4px rgba(45,106,79,0.18)}
+.step-pending{background:var(--c-neutral-200);color:var(--color-text-muted)}
+.step-label{font-size:9px;font-weight:700;color:var(--color-text-muted);text-align:center;white-space:nowrap}
+.step-label.active{color:var(--c-primary-700)}
+.step-line{flex:1;height:2px;border-radius:1px;background:var(--c-neutral-200);margin-bottom:18px}
+.step-line.done{background:var(--c-emerald-500)}
+.tracking-detail{padding:14px 16px;background:white;border-bottom:1px solid var(--color-border-light)}
+.tracking-detail-title{font-size:13px;font-weight:700;margin-bottom:8px}
+.tracking-detail-item{display:flex;align-items:center;justify-content:space-between;padding:5px 0;font-size:12px;color:var(--color-text-secondary);border-bottom:1px solid var(--color-border-light)}
+.tracking-detail-item:last-child{border-bottom:none}
+.tracking-detail-total{display:flex;justify-content:space-between;align-items:center;margin-top:8px;padding-top:8px;border-top:2px solid var(--color-border)}
+
+/* ============================================================
+   CUSTOMER — ORDERS LIST
+   ============================================================ */
+.order-card{display:flex;align-items:center;gap:12px;background:white;border-bottom:1px solid var(--color-border-light);padding:12px 16px;cursor:pointer;transition:background .12s}
+.order-card:hover{background:var(--c-neutral-50)}
+.order-card-thumb{width:48px;height:48px;background:var(--c-neutral-100);border-radius:var(--r-md);display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0}
+.order-card-info{flex:1}
+.order-card-tenant{font-size:13px;font-weight:700;color:var(--color-text-primary);margin-bottom:2px}
+.order-card-items{font-size:11px;color:var(--color-text-muted);margin-bottom:6px}
+.order-card-meta{display:flex;align-items:center;justify-content:space-between}
+.order-card-price{font-size:13px;font-weight:800;color:var(--c-primary-700)}
+.order-card-date{font-size:10px;color:var(--color-text-muted)}
+.order-reorder-btn{background:var(--c-primary-50);color:var(--c-primary-700);border:1px solid var(--c-primary-200);border-radius:var(--r-sm);padding:4px 8px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;flex-shrink:0}
+
+/* ============================================================
+   CUSTOMER — NOTIFICATIONS
+   ============================================================ */
+.notif-header-bar{background:white;border-bottom:1px solid var(--color-border-light);padding:8px 16px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.notif-read-all{font-size:12px;font-weight:700;color:var(--c-primary-600);cursor:pointer}
+.notif-item{display:flex;gap:12px;padding:12px 16px;border-bottom:1px solid var(--color-border-light);cursor:pointer;transition:background .12s;position:relative}
+.notif-item.unread{background:var(--c-primary-50)}
+.notif-item.unread::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--c-primary-600);border-radius:0 2px 2px 0}
+.notif-item:hover:not(.unread){background:var(--c-neutral-50)}
+.notif-icon{width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
+.notif-content{flex:1}
+.notif-title{font-size:13px;font-weight:700;color:var(--color-text-primary);margin-bottom:2px}
+.notif-desc{font-size:11px;color:var(--color-text-secondary);line-height:1.4}
+.notif-time{font-size:10px;color:var(--color-text-muted);margin-top:4px}
+
+/* ============================================================
+   CUSTOMER — PROFILE
+   ============================================================ */
+.profile-hero{background:linear-gradient(160deg,var(--c-primary-800),var(--c-primary-600));padding:24px 16px 32px;display:flex;flex-direction:column;align-items:center;gap:10px;flex-shrink:0}
+.profile-avatar{width:72px;height:72px;border-radius:50%;background:rgba(255,255,255,0.15);border:2.5px solid rgba(255,255,255,0.3);display:flex;align-items:center;justify-content:center;font-size:26px;font-weight:800;color:white;position:relative;cursor:pointer}
+.profile-avatar-edit{position:absolute;bottom:0;right:0;width:22px;height:22px;background:white;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;border:2px solid var(--c-primary-600)}
+.profile-name{font-size:20px;font-weight:800;color:white;letter-spacing:-0.3px}
+.profile-nim{font-size:11px;color:rgba(255,255,255,0.55);font-family:var(--font-mono)}
+.profile-stats{display:flex;gap:32px;margin-top:4px}
+.profile-stat{text-align:center}
+.profile-stat-val{font-size:20px;font-weight:800;color:white}
+.profile-stat-label{font-size:10px;color:rgba(255,255,255,0.5);margin-top:1px}
+.wallet-card{background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.18);border-radius:var(--r-lg);padding:12px 14px;display:flex;align-items:center;justify-content:space-between;width:100%}
+.wallet-left .wallet-label{font-size:10px;color:rgba(255,255,255,0.6);margin-bottom:2px}
+.wallet-amount{font-size:20px;font-weight:800;color:white}
+.wallet-topup{background:rgba(255,255,255,0.18);border:1px solid rgba(255,255,255,0.25);border-radius:var(--r-md);color:white;font-family:inherit;font-size:12px;font-weight:700;padding:8px 12px;cursor:pointer}
+.profile-menu{background:white}
+.profile-section-tag{padding:8px 16px 5px;font-size:10px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:var(--color-text-muted);background:var(--c-neutral-50);border-bottom:1px solid var(--color-border-light)}
+.profile-menu-item{display:flex;align-items:center;gap:12px;padding:12px 16px;border-bottom:1px solid var(--color-border-light);cursor:pointer;background:white;transition:background .12s}
+.profile-menu-item:hover{background:var(--c-neutral-50)}
+.profile-menu-icon-wrap{width:34px;height:34px;border-radius:var(--r-md);display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0}
+.profile-menu-text{flex:1;font-size:13px;font-weight:600;color:var(--color-text-primary)}
+.profile-menu-arrow{color:var(--color-text-muted);font-size:14px}
+.profile-menu-badge{font-size:10px;font-weight:700;padding:2px 6px;border-radius:var(--r-full);margin-right:6px}
+
+/* ============================================================
+   CUSTOMER — SEARCH RESULT
+   ============================================================ */
+.search-suggestion{padding:10px 16px;border-bottom:1px solid var(--color-border-light);display:flex;align-items:center;gap:10px;cursor:pointer}
+.search-suggestion:hover{background:var(--c-neutral-50)}
+.suggestion-icon{font-size:20px;width:32px;height:32px;background:var(--c-neutral-100);border-radius:var(--r-sm);display:flex;align-items:center;justify-content:center}
+.suggestion-name{font-size:13px;font-weight:600;color:var(--color-text-primary)}
+.suggestion-canteen{font-size:11px;color:var(--color-text-muted)}
+
+/* ============================================================
+   CUSTOMER — RATING MODAL
+   ============================================================ */
+.rating-stars{display:flex;gap:8px;justify-content:center;font-size:32px;margin:12px 0;cursor:pointer}
+.rating-star{opacity:0.3;transition:opacity .15s,transform .15s;user-select:none}
+.rating-star.active{opacity:1;transform:scale(1.1)}
+
+</style>
+</head>
+<body>
+
+<!-- TOAST -->
+<div class="toast-container" id="toastContainer"></div>
+<!-- MODAL -->
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal-box">
+    <div class="modal-icon" id="mIcon">⚠️</div>
+    <div class="modal-title" id="mTitle">Konfirmasi</div>
+    <div class="modal-body" id="mBody">Lanjutkan aksi ini?</div>
+    <div class="modal-actions">
+      <button class="modal-btn cancel" onclick="KK.closeModal()">Batal</button>
+      <button class="modal-btn confirm" id="mConfirmBtn" onclick="KK.confirmModal()">Ya, Lanjutkan</button>
+    </div>
+  </div>
+</div>
+
+<div class="app-shell">
+  <!-- ROLE BAR -->
+  <div class="role-bar">
+    <div class="role-bar-logo">
+      <div class="role-logo-mark">KK</div>
+      <div class="role-logo-text">KantinKita</div>
+      <div class="role-logo-ver">v2.0</div>
+    </div>
+    <div class="role-bar-sep">|</div>
+    <div class="role-bar-label">Mode:</div>
+    <div class="role-tabs">
+      <button class="role-tab active" id="rtab-customer" onclick="KK.switchRole('customer')"><span class="role-tab-dot"></span>📱 Customer</button>
+      <button class="role-tab" id="rtab-kasir" onclick="window.open('kk-part2-kasir.html','_blank')"><span class="role-tab-dot"></span>🧾 Kasir / POS</button>
+      <button class="role-tab" id="rtab-merchant" onclick="window.open('kk-part3-merchant.html','_blank')"><span class="role-tab-dot"></span>📊 Merchant</button>
+      <button class="role-tab" id="rtab-admin" onclick="window.open('kk-part4-admin.html','_blank')"><span class="role-tab-dot"></span>⚙️ Admin</button>
+    </div>
+    <div class="role-bar-right">
+      <span class="part-badge">PART 1 / 4</span>
+      <span class="sandbox-badge">SANDBOX</span>
+    </div>
+  </div>
+
+  <div class="views-container">
+    <!-- =============================================
+         VIEW: CUSTOMER
+         ============================================= -->
+    <div class="view active" id="view-customer">
+
+      <!-- === PHONE 1: Main App === -->
+      <div class="phone-wrap">
+        <div class="phone-label">Customer App — Main</div>
+        <div class="phone-frame">
+          <div class="phone-notch-bar"><div class="phone-notch"></div></div>
+          <div class="phone-screen" style="height:750px;">
+
+            <!-- ── HOME SCREEN ── -->
+            <div class="app-screen active" id="sc-home">
+              <div class="app-status"><span class="status-time" id="liveTime">09:41</span><span class="status-icons">📶 WiFi 🔋</span></div>
+              <div class="app-header">
+                <div class="app-logo-row">
+                  <div class="app-logo-mark">KK</div>
+                  <div>
+                    <div class="app-logo-text">KantinKita</div>
+                    <div style="font-size:10px;color:var(--color-text-muted);margin-top:-1px;">Universitas Indonesia</div>
+                  </div>
+                </div>
+                <div style="display:flex;gap:6px;">
+                  <button class="app-icon-btn" onclick="KK.goScreen('notif')" style="position:relative;">
+                    🔔<span id="notifDot" style="position:absolute;top:4px;right:4px;width:8px;height:8px;background:var(--c-red-500);border-radius:50%;border:1.5px solid white;"></span>
+                  </button>
+                  <button class="app-icon-btn" onclick="KK.goScreen('cart')">🛒</button>
+                </div>
+              </div>
+              <div class="app-body" id="homeBody">
+                <!-- Banner promo -->
+                <div class="home-banner">
+                  <div class="home-banner-tag">🔥 Promo Hari Ini</div>
+                  <div class="home-banner-title">Diskon 20% Semua<br>Minuman Segar!</div>
+                  <div class="home-banner-sub">Berlaku sampai jam 14.00 · Warung Bu Sari</div>
+                  <button class="home-banner-btn" onclick="KK.goScreen('search')">Lihat Promo →</button>
+                </div>
+                <!-- Canteen list -->
+                <div class="home-section-title">🏪 Kantin Tersedia</div>
+                <div class="canteen-row">
+                  <div class="canteen-card" onclick="KK.filterCat('makanan')">
+                    <div class="canteen-icon">🍛</div>
+                    <div class="canteen-name">Kantin Pak Budi</div>
+                    <div class="canteen-meta">⭐ 4.8 · Buka</div>
+                  </div>
+                  <div class="canteen-card" onclick="KK.filterCat('minuman')">
+                    <div class="canteen-icon">🥤</div>
+                    <div class="canteen-name">Warung Bu Sari</div>
+                    <div class="canteen-meta">⭐ 4.6 · Buka</div>
+                  </div>
+                  <div class="canteen-card" onclick="KK.filterCat('snack')">
+                    <div class="canteen-icon">🍡</div>
+                    <div class="canteen-name">Kios Snack Corner</div>
+                    <div class="canteen-meta">⭐ 4.5 · Buka</div>
+                  </div>
+                </div>
+                <!-- Menu section -->
+                <div class="home-section-title">🍽 Menu Populer</div>
+                <!-- Search bar -->
+                <div style="padding:0 16px 10px;">
+                  <div class="search-inner">
+                    <span class="search-icon">🔍</span>
+                    <input class="app-search" placeholder="Cari menu..." id="homeSearch" oninput="KK.searchProducts(this.value)">
+                  </div>
+                </div>
+                <!-- Category tabs -->
+                <div class="pill-tabs" id="catTabs">
+                  <button class="pill-tab active" onclick="KK.filterCat('semua',this)">Semua</button>
+                  <button class="pill-tab" onclick="KK.filterCat('makanan',this)">🍛 Makanan</button>
+                  <button class="pill-tab" onclick="KK.filterCat('minuman',this)">🥤 Minuman</button>
+                  <button class="pill-tab" onclick="KK.filterCat('snack',this)">🍡 Snack</button>
+                </div>
+                <!-- Product grid -->
+                <div class="product-grid" id="productGrid"></div>
+              </div>
+              <!-- Cart bar -->
+              <div class="cart-bar" id="cartBar" onclick="KK.goScreen('cart')">
+                <div class="cart-count" id="cartCount">0</div>
+                <div class="cart-label">Lihat Pesanan</div>
+                <div class="cart-total" id="cartTotal">Rp 0</div>
+              </div>
+              <div class="bottom-nav">
+                <div class="nav-tab active"><span class="nav-tab-icon">🏠</span><span class="nav-tab-label">Beranda</span><div class="nav-tab-pip"></div></div>
+                <div class="nav-tab" onclick="KK.goScreen('orders')"><span class="nav-tab-icon">📋</span><span class="nav-tab-label">Pesanan</span></div>
+                <div class="nav-tab" onclick="KK.goScreen('search')"><span class="nav-tab-icon">🔍</span><span class="nav-tab-label">Cari</span></div>
+                <div class="nav-tab" onclick="KK.goScreen('notif')"><span class="nav-tab-icon">🔔</span><span class="nav-tab-label">Notif</span></div>
+                <div class="nav-tab" onclick="KK.goScreen('profile')"><span class="nav-tab-icon">👤</span><span class="nav-tab-label">Profil</span></div>
+              </div>
+            </div>
+
+            <!-- ── CART SCREEN ── -->
+            <div class="app-screen" id="sc-cart">
+              <div class="app-status"><span class="status-time">09:41</span><span class="status-icons">📶 🔋</span></div>
+              <div class="app-header">
+                <button class="app-icon-btn back" onclick="KK.goScreen('home')">←</button>
+                <div class="app-header-title">Keranjang (<span id="cartHeaderCount">0</span>)</div>
+                <button onclick="KK.clearCart()" style="font-size:12px;color:var(--c-red-500);font-weight:700;background:var(--c-red-100);border:none;border-radius:6px;padding:5px 8px;cursor:pointer;font-family:inherit;">Hapus Semua</button>
+              </div>
+              <div class="cart-items-wrap" id="cartItemsList">
+                <div class="cart-empty-state" id="cartEmptyState">
+                  <div class="cart-empty-icon">🛒</div>
+                  <div class="cart-empty-title">Keranjang Kosong</div>
+                  <div>Tambahkan menu favorit kamu dulu ya!</div>
+                  <button class="btn btn-primary btn-sm" style="margin-top:12px;" onclick="KK.goScreen('home')">Browse Menu</button>
+                </div>
+              </div>
+              <div id="cartWithItems" style="display:none;flex-direction:column;flex:1;overflow:hidden;">
+                <div class="cart-items-wrap" id="cartItemsListFilled"></div>
+                <div class="cart-notes">
+                  <label class="form-label">📝 Catatan Pesanan (opsional)</label>
+                  <textarea placeholder="Contoh: tidak pakai sambal, minta sendok lebih, dll..." id="orderNotes"></textarea>
+                </div>
+                <div class="payment-section">
+                  <div class="payment-section-label">Metode Pembayaran</div>
+                  <div class="payment-options" id="paymentOptions">
+                    <div class="payment-option selected" onclick="KK.selectPayment('wallet',this)">
+                      <div class="payment-logo" style="background:var(--c-primary-700);">KK</div>
+                      <div><div class="payment-name">KantinKita Wallet</div><div class="payment-balance">Saldo: Rp 45.000</div></div>
+                      <div class="payment-radio checked" id="pr-wallet"></div>
+                    </div>
+                    <div class="payment-option" onclick="KK.selectPayment('qris',this)">
+                      <div class="payment-logo" style="background:#1a1a2e;">QR</div>
+                      <div><div class="payment-name">QRIS</div></div>
+                      <div class="payment-radio" id="pr-qris"></div>
+                    </div>
+                  </div>
+                </div>
+                <div class="cart-summary">
+                  <div class="summary-row"><span class="summary-key">Subtotal</span><span class="summary-val" id="summSubtotal">Rp 0</span></div>
+                  <div class="summary-row"><span class="summary-key">Biaya Layanan</span><span class="summary-val">Rp 500</span></div>
+                  <div class="summary-row"><span class="summary-key">Diskon Promo</span><span class="summary-val green" id="summDiscount">-Rp 0</span></div>
+                  <div class="summary-divider"></div>
+                  <div class="summary-total">
+                    <div class="summary-total-key">Total Pembayaran</div>
+                    <div class="summary-total-val" id="summTotal">Rp 0</div>
+                  </div>
+                  <button class="btn btn-primary btn-block btn-lg" style="margin-top:14px;" onclick="KK.placeOrder()">🍽 Pesan Sekarang</button>
+                </div>
+              </div>
+            </div>
+
+            <!-- ── TRACKING SCREEN ── -->
+            <div class="app-screen" id="sc-tracking">
+              <div class="app-status"><span class="status-time">09:41</span><span class="status-icons">📶 🔋</span></div>
+              <div class="app-header">
+                <button class="app-icon-btn back" onclick="KK.goScreen('orders')">←</button>
+                <div class="app-header-title">Track Pesanan</div>
+                <button class="app-icon-btn">💬</button>
+              </div>
+              <div class="app-body">
+                <div class="tracking-banner">
+                  <span class="tracking-emoji" id="trackEmoji">🍳</span>
+                  <div class="tracking-status-text" id="trackStatus">Sedang Dimasak</div>
+                  <div class="tracking-eta" id="trackEta">Estimasi siap: ~10 menit</div>
+                  <div class="tracking-id">ORD-20260315-0042</div>
+                </div>
+                <div class="tracking-progress">
+                  <div class="steps-row">
+                    <div class="step-node"><div class="step-circle step-done">✓</div><div class="step-label active">Diterima</div></div>
+                    <div class="step-line done"></div>
+                    <div class="step-node"><div class="step-circle step-done">✓</div><div class="step-label active">Konfirm</div></div>
+                    <div class="step-line done"></div>
+                    <div class="step-node"><div class="step-circle step-active" id="stepCooking">🍳</div><div class="step-label active">Dimasak</div></div>
+                    <div class="step-line" id="lineCookingReady"></div>
+                    <div class="step-node"><div class="step-circle step-pending" id="stepReady">📦</div><div class="step-label" id="stepReadyLabel">Siap</div></div>
+                    <div class="step-line" id="lineReadyDone"></div>
+                    <div class="step-node"><div class="step-circle step-pending" id="stepDone">✓</div><div class="step-label" id="stepDoneLabel">Selesai</div></div>
+                  </div>
+                </div>
+                <div class="tracking-detail">
+                  <div class="tracking-detail-title">📋 Rincian Pesanan</div>
+                  <div class="tracking-detail-item"><span>🍛 Nasi Ayam Geprek × 1</span><span style="font-weight:700;">Rp 18.000</span></div>
+                  <div class="tracking-detail-item"><span>🥤 Es Teh Manis × 2</span><span style="font-weight:700;">Rp 10.000</span></div>
+                  <div class="tracking-detail-item"><span>🥟 Risoles Sayuran × 1</span><span style="font-weight:700;">Rp 5.000</span></div>
+                  <div class="tracking-detail-item"><span>Biaya Layanan</span><span>Rp 500</span></div>
+                  <div class="tracking-detail-total">
+                    <span style="font-weight:700;font-size:14px;">Total</span>
+                    <span style="font-size:18px;font-weight:800;color:var(--c-primary-700);">Rp 33.500</span>
+                  </div>
+                </div>
+                <!-- Simulate progress -->
+                <div style="padding:14px 16px;background:var(--c-neutral-50);">
+                  <div style="font-size:12px;font-weight:700;color:var(--color-text-muted);margin-bottom:8px;">⚡ Simulasi Status (Demo)</div>
+                  <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                    <button class="btn btn-sm btn-secondary" onclick="KK.simulateTrack('cooking')">🍳 Dimasak</button>
+                    <button class="btn btn-sm btn-secondary" onclick="KK.simulateTrack('ready')">📦 Siap</button>
+                    <button class="btn btn-sm btn-primary" onclick="KK.simulateTrack('done')">✓ Selesai</button>
+                  </div>
+                </div>
+                <div style="padding:14px 16px;">
+                  <button class="btn btn-danger btn-block" onclick="KK.showModal('danger','Batalkan Pesanan?','Pesanan yang sudah dikonfirmasi tidak bisa dibatalkan. Hubungi kasir langsung jika darurat.',function(){KK.toast('info','ℹ️','Pesanan Dibatalkan','Silakan hubungi kasir langsung')})">Batalkan Pesanan</button>
+                </div>
+              </div>
+            </div>
+
+            <!-- ── ORDERS SCREEN ── -->
+            <div class="app-screen" id="sc-orders">
+              <div class="app-status"><span class="status-time">09:41</span><span class="status-icons">📶 🔋</span></div>
+              <div class="app-header">
+                <div class="app-header-title">Pesanan Saya</div>
+                <button class="app-icon-btn" onclick="KK.toast('info','🔍','Filter Pesanan','Filter berdasarkan tanggal atau status')">⚙</button>
+              </div>
+              <div class="pill-tabs">
+                <button class="pill-tab active" onclick="KK.filterOrders('aktif',this)">Aktif (2)</button>
+                <button class="pill-tab" onclick="KK.filterOrders('selesai',this)">Selesai</button>
+                <button class="pill-tab" onclick="KK.filterOrders('dibatalkan',this)">Dibatalkan</button>
+              </div>
+              <div class="app-body" id="ordersList">
+                <!-- active orders -->
+                <div class="order-card" id="activeOrder1" onclick="KK.goScreen('tracking')">
+                  <div class="order-card-thumb" style="background:var(--c-amber-100);">🍳</div>
+                  <div class="order-card-info">
+                    <div class="order-card-tenant">Kantin Pak Budi</div>
+                    <div class="order-card-items">Nasi Geprek, Es Teh ×2, Risoles</div>
+                    <div class="order-card-meta">
+                      <span class="badge badge-warning"><span class="badge-dot"></span>Dimasak</span>
+                      <span class="order-card-price">Rp 33.500</span>
+                    </div>
+                  </div>
+                  <span style="color:var(--color-text-muted);font-size:16px;">›</span>
+                </div>
+                <div class="order-card" id="activeOrder2">
+                  <div class="order-card-thumb" style="background:var(--c-primary-100);">🥤</div>
+                  <div class="order-card-info">
+                    <div class="order-card-tenant">Warung Bu Sari</div>
+                    <div class="order-card-items">Es Coklat, Pisang Goreng ×2</div>
+                    <div class="order-card-meta">
+                      <span class="badge badge-success"><span class="badge-dot"></span>Siap Diambil</span>
+                      <span class="order-card-price">Rp 16.000</span>
+                    </div>
+                  </div>
+                  <span style="color:var(--color-text-muted);font-size:16px;">›</span>
+                </div>
+                <!-- history orders (hidden initially) -->
+                <div class="order-card" id="historyOrders" style="display:none;">
+                  <div class="order-card-thumb">🍜</div>
+                  <div class="order-card-info">
+                    <div class="order-card-tenant">Kantin Pak Budi</div>
+                    <div class="order-card-items">Mie Goreng Spesial × 1</div>
+                    <div class="order-card-meta">
+                      <div><span class="badge badge-neutral">Selesai</span><span class="order-card-date" style="margin-left:6px;">14 Mar 12:30</span></div>
+                      <span class="order-card-price">Rp 20.000</span>
+                    </div>
+                  </div>
+                  <button class="order-reorder-btn" onclick="event.stopPropagation();KK.reorder()">Pesan Lagi</button>
+                </div>
+              </div>
+              <div class="bottom-nav">
+                <div class="nav-tab" onclick="KK.goScreen('home')"><span class="nav-tab-icon">🏠</span><span class="nav-tab-label">Beranda</span></div>
+                <div class="nav-tab active"><span class="nav-tab-icon">📋</span><span class="nav-tab-label">Pesanan</span><div class="nav-tab-pip"></div></div>
+                <div class="nav-tab" onclick="KK.goScreen('search')"><span class="nav-tab-icon">🔍</span><span class="nav-tab-label">Cari</span></div>
+                <div class="nav-tab" onclick="KK.goScreen('notif')"><span class="nav-tab-icon">🔔</span><span class="nav-tab-label">Notif</span></div>
+                <div class="nav-tab" onclick="KK.goScreen('profile')"><span class="nav-tab-icon">👤</span><span class="nav-tab-label">Profil</span></div>
+              </div>
+            </div>
+
+            <!-- ── SEARCH SCREEN ── -->
+            <div class="app-screen" id="sc-search">
+              <div class="app-status"><span class="status-time">09:41</span><span class="status-icons">📶 🔋</span></div>
+              <div class="app-header">
+                <button class="app-icon-btn back" onclick="KK.goScreen('home')">←</button>
+                <div style="flex:1;padding:0 8px;">
+                  <div class="search-inner">
+                    <span class="search-icon">🔍</span>
+                    <input class="app-search" placeholder="Cari menu, kantin..." id="searchInput" autofocus oninput="KK.doSearch(this.value)">
+                  </div>
+                </div>
+                <button onclick="document.getElementById('searchInput').value='';KK.doSearch('')" style="font-size:12px;color:var(--color-text-muted);background:none;border:none;cursor:pointer;padding:4px 6px;font-weight:700;">Batal</button>
+              </div>
+              <div class="app-body" id="searchBody">
+                <!-- Recent search suggestions -->
+                <div id="searchSuggestions">
+                  <div style="padding:10px 16px 6px;font-size:11px;font-weight:700;color:var(--color-text-muted);text-transform:uppercase;letter-spacing:0.8px;">Pencarian Terakhir</div>
+                  <div class="search-suggestion" onclick="KK.quickSearch('Nasi Geprek')"><div class="suggestion-icon">🕑</div><div><div class="suggestion-name">Nasi Geprek</div></div></div>
+                  <div class="search-suggestion" onclick="KK.quickSearch('Es Teh')"><div class="suggestion-icon">🕑</div><div><div class="suggestion-name">Es Teh</div></div></div>
+                  <div style="padding:10px 16px 6px;font-size:11px;font-weight:700;color:var(--color-text-muted);text-transform:uppercase;letter-spacing:0.8px;">Populer</div>
+                  <div class="search-suggestion" onclick="KK.quickSearch('Mie')"><div class="suggestion-icon">🔥</div><div><div class="suggestion-name">Mie Goreng</div><div class="suggestion-canteen">Kantin Pak Budi</div></div></div>
+                  <div class="search-suggestion" onclick="KK.quickSearch('Pisang')"><div class="suggestion-icon">🔥</div><div><div class="suggestion-name">Pisang Goreng</div><div class="suggestion-canteen">Warung Bu Sari</div></div></div>
+                </div>
+                <!-- Search results -->
+                <div id="searchResults" style="display:none;">
+                  <div class="product-grid" id="searchResultGrid"></div>
+                </div>
+              </div>
+              <div class="bottom-nav">
+                <div class="nav-tab" onclick="KK.goScreen('home')"><span class="nav-tab-icon">🏠</span><span class="nav-tab-label">Beranda</span></div>
+                <div class="nav-tab" onclick="KK.goScreen('orders')"><span class="nav-tab-icon">📋</span><span class="nav-tab-label">Pesanan</span></div>
+                <div class="nav-tab active"><span class="nav-tab-icon">🔍</span><span class="nav-tab-label">Cari</span><div class="nav-tab-pip"></div></div>
+                <div class="nav-tab" onclick="KK.goScreen('notif')"><span class="nav-tab-icon">🔔</span><span class="nav-tab-label">Notif</span></div>
+                <div class="nav-tab" onclick="KK.goScreen('profile')"><span class="nav-tab-icon">👤</span><span class="nav-tab-label">Profil</span></div>
+              </div>
+            </div>
+
+            <!-- ── NOTIF SCREEN ── -->
+            <div class="app-screen" id="sc-notif">
+              <div class="app-status"><span class="status-time">09:41</span><span class="status-icons">📶 🔋</span></div>
+              <div class="app-header">
+                <div class="app-header-title">Notifikasi</div>
+                <button onclick="KK.markAllRead()" style="font-size:12px;color:var(--c-primary-600);font-weight:700;background:none;border:none;cursor:pointer;font-family:inherit;">Tandai Semua Dibaca</button>
+              </div>
+              <div class="app-body" id="notifList">
+                <div class="notif-item unread" id="notif1">
+                  <div class="notif-icon" style="background:var(--c-emerald-100);">✅</div>
+                  <div class="notif-content">
+                    <div class="notif-title">Pesanan Siap Diambil!</div>
+                    <div class="notif-desc">Es Coklat & Pisang Goreng dari Warung Bu Sari sudah siap. Ambil di loket B.</div>
+                    <div class="notif-time">2 menit lalu</div>
+                  </div>
+                </div>
+                <div class="notif-item unread" id="notif2">
+                  <div class="notif-icon" style="background:var(--c-amber-100);">🍳</div>
+                  <div class="notif-content">
+                    <div class="notif-title">Pesananmu Sedang Dimasak</div>
+                    <div class="notif-desc">Nasi Geprek & Es Teh dari Kantin Pak Budi sedang dipersiapkan. ~10 menit.</div>
+                    <div class="notif-time">8 menit lalu</div>
+                  </div>
+                </div>
+                <div class="notif-item" onclick="KK.toast('info','💰','Promo Dilihat','Buka halaman promosi untuk detail')">
+                  <div class="notif-icon" style="background:var(--c-red-100);">🔥</div>
+                  <div class="notif-content">
+                    <div class="notif-title">Flash Sale! 20% OFF Minuman</div>
+                    <div class="notif-desc">Warung Bu Sari sedang flash sale. Berlaku sampai 14:00 WIB hari ini.</div>
+                    <div class="notif-time">30 menit lalu</div>
+                  </div>
+                </div>
+                <div class="notif-item" onclick="KK.openRatingModal()">
+                  <div class="notif-icon" style="background:var(--c-amber-100);">⭐</div>
+                  <div class="notif-content">
+                    <div class="notif-title">Bagaimana Pesanan Kemarin?</div>
+                    <div class="notif-desc">Beri rating untuk Mie Goreng Spesial dari Kantin Pak Budi.</div>
+                    <div class="notif-time">Kemarin 14:30</div>
+                  </div>
+                </div>
+                <div class="notif-item">
+                  <div class="notif-icon" style="background:var(--c-primary-100);">💳</div>
+                  <div class="notif-content">
+                    <div class="notif-title">Top Up Wallet Berhasil</div>
+                    <div class="notif-desc">Saldo KantinKita Wallet kamu telah bertambah Rp 50.000.</div>
+                    <div class="notif-time">13 Mar 10:22</div>
+                  </div>
+                </div>
+              </div>
+              <div class="bottom-nav">
+                <div class="nav-tab" onclick="KK.goScreen('home')"><span class="nav-tab-icon">🏠</span><span class="nav-tab-label">Beranda</span></div>
+                <div class="nav-tab" onclick="KK.goScreen('orders')"><span class="nav-tab-icon">📋</span><span class="nav-tab-label">Pesanan</span></div>
+                <div class="nav-tab" onclick="KK.goScreen('search')"><span class="nav-tab-icon">🔍</span><span class="nav-tab-label">Cari</span></div>
+                <div class="nav-tab active"><span class="nav-tab-icon">🔔</span><span class="nav-tab-label">Notif</span><div class="nav-tab-pip"></div></div>
+                <div class="nav-tab" onclick="KK.goScreen('profile')"><span class="nav-tab-icon">👤</span><span class="nav-tab-label">Profil</span></div>
+              </div>
+            </div>
+
+            <!-- ── PROFILE SCREEN ── -->
+            <div class="app-screen" id="sc-profile">
+              <div class="app-status"><span class="status-time">09:41</span><span class="status-icons">📶 🔋</span></div>
+              <div class="app-body" style="background:var(--c-neutral-50);">
+                <div class="profile-hero">
+                  <div class="profile-avatar" onclick="KK.toast('info','📷','Ganti Foto','Buka kamera atau galeri untuk upload foto profil')">
+                    AN
+                    <div class="profile-avatar-edit">✏️</div>
+                  </div>
+                  <div class="profile-name">Ahmad Naufal</div>
+                  <div class="profile-nim">2306123456 · Teknik Informatika</div>
+                  <div class="profile-stats">
+                    <div class="profile-stat"><div class="profile-stat-val">47</div><div class="profile-stat-label">Pesanan</div></div>
+                    <div class="profile-stat"><div class="profile-stat-val">4.9★</div><div class="profile-stat-label">Rating</div></div>
+                    <div class="profile-stat"><div class="profile-stat-val">Rp12K</div><div class="profile-stat-label">Hemat</div></div>
+                  </div>
+                  <div class="wallet-card">
+                    <div class="wallet-left">
+                      <div class="wallet-label">💳 KantinKita Wallet</div>
+                      <div class="wallet-amount" id="walletBal">Rp 45.000</div>
+                    </div>
+                    <button class="wallet-topup" onclick="KK.topupWallet()">+ Top Up</button>
+                  </div>
+                </div>
+                <!-- Menu items -->
+                <div class="profile-menu">
+                  <div class="profile-section-tag">Akun Saya</div>
+                  <div class="profile-menu-item" onclick="KK.editProfile()">
+                    <div class="profile-menu-icon-wrap" style="background:var(--c-primary-50);">👤</div>
+                    <div class="profile-menu-text">Edit Profil</div>
+                    <span class="profile-menu-arrow">›</span>
+                  </div>
+                  <div class="profile-menu-item" onclick="KK.goScreen('orders')">
+                    <div class="profile-menu-icon-wrap" style="background:var(--c-blue-100);">📋</div>
+                    <div class="profile-menu-text">Riwayat Pesanan</div>
+                    <span class="profile-menu-badge badge badge-neutral">47</span>
+                    <span class="profile-menu-arrow">›</span>
+                  </div>
+                  <div class="profile-menu-item" onclick="KK.toast('info','❤️','Favorit','Daftar menu favorit kamu')">
+                    <div class="profile-menu-icon-wrap" style="background:var(--c-red-100);">❤️</div>
+                    <div class="profile-menu-text">Menu Favorit</div>
+                    <span class="profile-menu-arrow">›</span>
+                  </div>
+                  <div class="profile-section-tag">Pengaturan</div>
+                  <div class="profile-menu-item" onclick="KK.toast('info','🔔','Notifikasi','Atur preferensi notifikasi')">
+                    <div class="profile-menu-icon-wrap" style="background:var(--c-amber-100);">🔔</div>
+                    <div class="profile-menu-text">Notifikasi</div>
+                    <span class="profile-menu-arrow">›</span>
+                  </div>
+                  <div class="profile-menu-item" onclick="KK.toast('info','🔒','Keamanan','Ubah password dan pengaturan keamanan')">
+                    <div class="profile-menu-icon-wrap" style="background:var(--c-neutral-100);">🔒</div>
+                    <div class="profile-menu-text">Keamanan & Privasi</div>
+                    <span class="profile-menu-arrow">›</span>
+                  </div>
+                  <div class="profile-menu-item" onclick="KK.toast('info','❓','Bantuan','Pusat bantuan dan FAQ')">
+                    <div class="profile-menu-icon-wrap" style="background:var(--c-blue-100);">❓</div>
+                    <div class="profile-menu-text">Bantuan & FAQ</div>
+                    <span class="profile-menu-arrow">›</span>
+                  </div>
+                  <div class="profile-section-tag">Lainnya</div>
+                  <div class="profile-menu-item" onclick="KK.showModal('danger','Keluar dari Akun?','Anda akan logout dan perlu login ulang untuk memesan.',function(){KK.toast('info','👋','Logout Berhasil','Sampai jumpa lagi!')})">
+                    <div class="profile-menu-icon-wrap" style="background:var(--c-red-100);">🚪</div>
+                    <div class="profile-menu-text" style="color:var(--c-red-500);">Logout</div>
+                    <span class="profile-menu-arrow">›</span>
+                  </div>
+                </div>
+              </div>
+              <div class="bottom-nav">
+                <div class="nav-tab" onclick="KK.goScreen('home')"><span class="nav-tab-icon">🏠</span><span class="nav-tab-label">Beranda</span></div>
+                <div class="nav-tab" onclick="KK.goScreen('orders')"><span class="nav-tab-icon">📋</span><span class="nav-tab-label">Pesanan</span></div>
+                <div class="nav-tab" onclick="KK.goScreen('search')"><span class="nav-tab-icon">🔍</span><span class="nav-tab-label">Cari</span></div>
+                <div class="nav-tab" onclick="KK.goScreen('notif')"><span class="nav-tab-icon">🔔</span><span class="nav-tab-label">Notif</span></div>
+                <div class="nav-tab active"><span class="nav-tab-icon">👤</span><span class="nav-tab-label">Profil</span><div class="nav-tab-pip"></div></div>
+              </div>
+            </div>
+
+          </div><!-- end phone-screen -->
+        </div><!-- end phone-frame -->
+      </div><!-- end phone-wrap main -->
+
+      <!-- === PHONE 2: Product Detail + Top-up === -->
+      <div class="phone-wrap">
+        <div class="phone-label">Product Detail & Top-up</div>
+        <div class="phone-frame sm">
+          <div class="phone-notch-bar"><div class="phone-notch"></div></div>
+          <div class="phone-screen" style="height:750px;">
+
+            <!-- PRODUCT DETAIL -->
+            <div class="app-screen active" id="sc2-detail">
+              <div class="app-status"><span class="status-time">09:41</span><span class="status-icons">📶 🔋</span></div>
+              <div class="app-header">
+                <button class="app-icon-btn back">←</button>
+                <div class="app-header-title">Detail Menu</div>
+                <button class="app-icon-btn">❤️</button>
+              </div>
+              <div class="product-detail-hero">
+                <div class="detail-bg-gradient"></div>
+                <span class="detail-emoji">🍛</span>
+                <button class="detail-favorite" onclick="KK.toggleFav(this)">🤍</button>
+              </div>
+              <div class="detail-body">
+                <div class="detail-header">
+                  <div>
+                    <span class="badge badge-success" style="margin-bottom:6px;">⭐ Bestseller</span>
+                    <div class="detail-name">Nasi Ayam Geprek</div>
+                    <div class="detail-canteen">🏪 Kantin Pak Budi · ⭐ 4.8 (238 ulasan)</div>
+                  </div>
+                  <div class="detail-price">Rp 18.000</div>
+                </div>
+                <div class="detail-desc">Nasi putih pulen dengan ayam goreng crispy yang digeprek, sambal merah, lalapan segar, dan kerupuk. Tersedia pilihan tingkat kepedasan sesuai selera.</div>
+                <div class="detail-section-label">🌶 Tingkat Kepedasan</div>
+                <div class="option-list" id="spicyList">
+                  <div class="option-item selected" onclick="KK.selectOption(this,'spicyList')">
+                    <span>🌿</span><div class="option-item-label">Tidak Pedas</div>
+                    <div class="option-radio checked"></div>
+                  </div>
+                  <div class="option-item" onclick="KK.selectOption(this,'spicyList')">
+                    <span>🌶</span><div class="option-item-label">Sedang</div>
+                    <div class="option-radio"></div>
+                  </div>
+                  <div class="option-item" onclick="KK.selectOption(this,'spicyList')">
+                    <span>🌶🌶</span><div class="option-item-label">Pedas</div>
+                    <div class="option-radio"></div>
+                  </div>
+                  <div class="option-item" onclick="KK.selectOption(this,'spicyList')">
+                    <span>🌶🌶🌶</span><div class="option-item-label">Extra Pedas</div><div class="option-item-price">+Rp 0</div>
+                    <div class="option-radio"></div>
+                  </div>
+                </div>
+                <div class="detail-section-label">🍚 Pilihan Nasi</div>
+                <div class="option-list" id="riceList">
+                  <div class="option-item selected" onclick="KK.selectOption(this,'riceList')">
+                    <span>🍚</span><div class="option-item-label">Nasi Putih</div>
+                    <div class="option-radio checked"></div>
+                  </div>
+                  <div class="option-item" onclick="KK.selectOption(this,'riceList')">
+                    <span>🟤</span><div class="option-item-label">Nasi Merah</div><div class="option-item-price">+Rp 2.000</div>
+                    <div class="option-radio"></div>
+                  </div>
+                </div>
+              </div>
+              <div class="detail-footer">
+                <div class="detail-qty-wrap">
+                  <div class="detail-qty-label">Jumlah</div>
+                  <div class="qty-stepper">
+                    <button class="qty-btn" onclick="KK.detailQty(-1)">−</button>
+                    <div class="qty-val" id="detailQtyVal">1</div>
+                    <button class="qty-btn" onclick="KK.detailQty(1)">+</button>
+                  </div>
+                </div>
+                <button class="detail-add-btn" onclick="KK.addDetailToCart()">
+                  🛒 Tambah · <span id="detailPriceShow">Rp 18.000</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- TOP UP SCREEN -->
+            <div class="app-screen" id="sc2-topup">
+              <div class="app-status"><span class="status-time">09:41</span><span class="status-icons">📶 🔋</span></div>
+              <div class="app-header">
+                <button class="app-icon-btn back" onclick="KK.goScreen2('detail')">←</button>
+                <div class="app-header-title">Top Up Wallet</div>
+                <div></div>
+              </div>
+              <div class="app-body">
+                <div style="padding:16px;background:linear-gradient(135deg,var(--c-primary-800),var(--c-primary-600));margin:12px;border-radius:var(--r-lg);">
+                  <div style="font-size:11px;color:rgba(255,255,255,0.6);margin-bottom:4px;">Saldo Saat Ini</div>
+                  <div style="font-size:28px;font-weight:800;color:white;" id="topupCurrentBal">Rp 45.000</div>
+                </div>
+                <div style="padding:0 16px;">
+                  <div class="form-label">Nominal Top Up</div>
+                  <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px;">
+                    <button class="topup-amount-btn" onclick="KK.selectTopupAmount(10000,this)">Rp 10.000</button>
+                    <button class="topup-amount-btn" onclick="KK.selectTopupAmount(25000,this)">Rp 25.000</button>
+                    <button class="topup-amount-btn" onclick="KK.selectTopupAmount(50000,this)">Rp 50.000</button>
+                    <button class="topup-amount-btn" onclick="KK.selectTopupAmount(100000,this)">Rp 100.000</button>
+                  </div>
+                  <div class="form-group">
+                    <div class="form-label">Atau masukkan nominal</div>
+                    <input class="input" type="number" placeholder="Rp 0" id="customTopup" oninput="KK.customTopupInput(this.value)">
+                  </div>
+                  <div class="form-label">Metode Pembayaran</div>
+                  <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:14px;">
+                    <div class="payment-option selected" id="topupBCA" onclick="KK.selectTopupMethod('bca',this)">
+                      <div class="payment-logo" style="background:#003087;">BCA</div>
+                      <div class="payment-name">Transfer BCA Virtual Account</div>
+                      <div class="payment-radio checked" id="tpr-bca"></div>
+                    </div>
+                    <div class="payment-option" id="topupQRIS" onclick="KK.selectTopupMethod('qris',this)">
+                      <div class="payment-logo" style="background:#1a1a2e;">QR</div>
+                      <div class="payment-name">QRIS</div>
+                      <div class="payment-radio" id="tpr-qris"></div>
+                    </div>
+                  </div>
+                  <div style="background:var(--c-neutral-50);border-radius:var(--r-md);padding:12px;margin-bottom:14px;font-size:12px;color:var(--color-text-secondary);">
+                    ℹ️ Dana akan masuk otomatis dalam 5 menit setelah pembayaran dikonfirmasi.
+                  </div>
+                  <button class="btn btn-primary btn-block btn-lg" onclick="KK.processTopup()">💳 Lanjut Bayar</button>
+                </div>
+              </div>
+            </div>
+
+            <!-- RATING MODAL SCREEN -->
+            <div class="app-screen" id="sc2-rating">
+              <div class="app-status"><span class="status-time">09:41</span><span class="status-icons">📶 🔋</span></div>
+              <div class="app-header">
+                <button class="app-icon-btn back" onclick="KK.goScreen2('detail')">←</button>
+                <div class="app-header-title">Beri Ulasan</div>
+                <div></div>
+              </div>
+              <div class="app-body">
+                <div style="padding:20px 16px;text-align:center;border-bottom:1px solid var(--color-border-light);">
+                  <div style="font-size:48px;margin-bottom:8px;">🍜</div>
+                  <div style="font-size:16px;font-weight:800;margin-bottom:4px;">Mie Goreng Spesial</div>
+                  <div style="font-size:12px;color:var(--color-text-muted);">Kantin Pak Budi · 14 Mar 12:30</div>
+                </div>
+                <div style="padding:20px 16px;">
+                  <div style="font-size:14px;font-weight:700;margin-bottom:8px;text-align:center;">Bagaimana pesananmu?</div>
+                  <div class="rating-stars" id="ratingStars">
+                    <span class="rating-star" onclick="KK.setRating(1)">⭐</span>
+                    <span class="rating-star" onclick="KK.setRating(2)">⭐</span>
+                    <span class="rating-star" onclick="KK.setRating(3)">⭐</span>
+                    <span class="rating-star" onclick="KK.setRating(4)">⭐</span>
+                    <span class="rating-star" onclick="KK.setRating(5)">⭐</span>
+                  </div>
+                  <div style="text-align:center;font-size:14px;font-weight:700;color:var(--color-text-muted);margin-bottom:16px;" id="ratingLabel">Pilih bintang</div>
+                  <div class="form-group">
+                    <div class="form-label">Komentar (opsional)</div>
+                    <textarea class="input" style="height:80px;padding-top:8px;resize:none;" placeholder="Ceritakan pengalamanmu..." id="ratingComment"></textarea>
+                  </div>
+                  <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;" id="ratingTags">
+                    <button class="pill-tab" onclick="KK.toggleRatingTag(this)">Porsi Cukup</button>
+                    <button class="pill-tab" onclick="KK.toggleRatingTag(this)">Enak Banget</button>
+                    <button class="pill-tab" onclick="KK.toggleRatingTag(this)">Pelayanan Ramah</button>
+                    <button class="pill-tab" onclick="KK.toggleRatingTag(this)">Cepat Saji</button>
+                  </div>
+                  <button class="btn btn-primary btn-block btn-lg" onclick="KK.submitRating()">⭐ Kirim Ulasan</button>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+
+    </div><!-- end view-customer -->
+  </div>
+</div>
+
+<style>
+.topup-amount-btn{padding:12px;border:1.5px solid var(--color-border);border-radius:var(--r-md);background:white;font-size:13px;font-weight:700;cursor:pointer;transition:all .15s;color:var(--color-text-primary);font-family:inherit}
+.topup-amount-btn.selected{border-color:var(--c-primary-600);background:var(--c-primary-50);color:var(--c-primary-700)}
+.topup-amount-btn:hover:not(.selected){background:var(--c-neutral-50)}
+</style>
+
+<script>
+// ============================================================
+//  SHARED DATA
+// ============================================================
+const PRODUCTS = [
+  {id:1,name:'Nasi Ayam Geprek',price:18000,emoji:'🍛',cat:'makanan',canteen:'Kantin Pak Budi',badge:'Bestseller',badgeCls:'badge-success'},
+  {id:2,name:'Mie Goreng Spesial',price:20000,emoji:'🍜',cat:'makanan',canteen:'Kantin Pak Budi',badge:'Promo',badgeCls:'badge-warning'},
+  {id:3,name:'Nasi Uduk + Lauk',price:15000,emoji:'🍚',cat:'makanan',canteen:'Kantin Pak Budi',badge:null},
+  {id:4,name:'Lontong Sayur',price:12000,emoji:'🫙',cat:'makanan',canteen:'Warung Bu Sari',badge:null},
+  {id:5,name:'Soto Ayam',price:16000,emoji:'🍲',cat:'makanan',canteen:'Kantin Pak Budi',badge:'New',badgeCls:'badge-info'},
+  {id:6,name:'Es Teh Manis',price:5000,emoji:'🥤',cat:'minuman',canteen:'Warung Bu Sari',badge:'Bestseller',badgeCls:'badge-success'},
+  {id:7,name:'Es Coklat',price:8000,emoji:'🍫',cat:'minuman',canteen:'Warung Bu Sari',badge:null},
+  {id:8,name:'Jus Alpukat',price:12000,emoji:'🥑',cat:'minuman',canteen:'Warung Bu Sari',badge:'New',badgeCls:'badge-info'},
+  {id:9,name:'Kopi Susu',price:10000,emoji:'☕',cat:'minuman',canteen:'Kantin Pak Budi',badge:null},
+  {id:10,name:'Risoles Sayuran',price:5000,emoji:'🥟',cat:'snack',canteen:'Kios Snack Corner',badge:null},
+  {id:11,name:'Pisang Goreng',price:8000,emoji:'🍌',cat:'snack',canteen:'Warung Bu Sari',badge:null},
+  {id:12,name:'Singkong Goreng',price:5000,emoji:'🍠',cat:'snack',canteen:'Kios Snack Corner',badge:'Promo',badgeCls:'badge-warning'},
+  {id:13,name:'Martabak Mini',price:10000,emoji:'🥞',cat:'snack',canteen:'Kios Snack Corner',badge:'New',badgeCls:'badge-info'},
+];
+
+// ============================================================
+//  STATE
+// ============================================================
+const STATE = {
+  cart: {},            // {id: qty}
+  currentScreen: 'home',
+  currentScreen2: 'detail',
+  activeCat: 'semua',
+  searchQ: '',
+  paymentMethod: 'wallet',
+  topupAmount: 0,
+  topupMethod: 'bca',
+  detailQty: 1,
+  detailBasePrice: 18000,
+  walletBalance: 45000,
+  currentRating: 0,
+  modalCb: null,
+  notifUnread: 4,
+};
+
+// ============================================================
+//  MAIN KK OBJECT
+// ============================================================
+const KK = {
+
+  // ── TOAST ──
+  toast(type, icon, title, msg) {
+    const el = document.createElement('div');
+    el.className = `toast ${type}`;
+    el.innerHTML = `<div class="toast-icon-w">${icon}</div><div class="toast-body"><div class="toast-title">${title}</div><div class="toast-msg">${msg}</div></div>`;
+    document.getElementById('toastContainer').appendChild(el);
+    setTimeout(()=>el.remove(), 3500);
+  },
+
+  // ── MODAL ──
+  showModal(type, title, body, cb) {
+    const icons={danger:'🗑️',warning:'⚠️',success:'✅'};
+    const classes={danger:'danger',warning:'warning',success:'success'};
+    const btnCls={danger:'danger',warning:'confirm',success:'confirm'};
+    const iconEl=document.getElementById('mIcon');
+    iconEl.textContent=icons[type];
+    iconEl.className=`modal-icon ${classes[type]}`;
+    document.getElementById('mTitle').textContent=title;
+    document.getElementById('mBody').textContent=body;
+    const btn=document.getElementById('mConfirmBtn');
+    btn.className=`modal-btn ${btnCls[type]}`;
+    STATE.modalCb=cb;
+    document.getElementById('modalOverlay').classList.add('open');
+  },
+  closeModal(){ document.getElementById('modalOverlay').classList.remove('open'); },
+  confirmModal(){ this.closeModal(); if(STATE.modalCb) STATE.modalCb(); },
+
+  // ── SCREEN NAV ──
+  goScreen(name) {
+    document.querySelectorAll('#view-customer .phone-frame:first-child .app-screen').forEach(s=>s.classList.remove('active'));
+    const el = document.getElementById(`sc-${name}`);
+    if(el) el.classList.add('active');
+    STATE.currentScreen = name;
+    // Update notif dot
+    if(name==='notif'){ STATE.notifUnread=0; document.getElementById('notifDot').style.display='none'; }
+  },
+  goScreen2(name) {
+    document.querySelectorAll('.phone-frame.sm .app-screen').forEach(s=>s.classList.remove('active'));
+    const el = document.getElementById(`sc2-${name}`);
+    if(el) el.classList.add('active');
+    STATE.currentScreen2=name;
+  },
+  switchRole(r){ /* single page for this part */ },
+
+  // ── PRODUCT RENDERING ──
+  renderProducts(gridId='productGrid', products=PRODUCTS) {
+    const grid = document.getElementById(gridId);
+    if(!grid) return;
+    grid.innerHTML = products.map(p => {
+      const inCart = STATE.cart[p.id] > 0;
+      return `<div class="product-card" onclick="KK.openDetail(${p.id})">
+        <div class="product-thumb">
+          ${p.emoji}
+          ${p.badge ? `<span class="product-badge badge ${p.badgeCls}">${p.badge}</span>` : ''}
+        </div>
+        <div class="product-info">
+          <div class="product-name">${p.name}</div>
+          <div class="product-canteen">${p.canteen}</div>
+          <div class="product-footer">
+            <span class="product-price">Rp ${p.price.toLocaleString('id')}</span>
+            <button class="product-add ${inCart?'in-cart':''}" onclick="event.stopPropagation();KK.addToCart(${p.id})">${inCart?'✓':'+'}</button>
+          </div>
+        </div>
+      </div>`;
+    }).join('');
+  },
+
+  filterCat(cat, btn) {
+    STATE.activeCat = cat;
+    document.querySelectorAll('#catTabs .pill-tab').forEach(b=>b.classList.remove('active'));
+    if(btn) btn.classList.add('active');
+    this.renderProducts('productGrid', PRODUCTS.filter(p=>cat==='semua'||p.cat===cat));
+    this.goScreen('home');
+  },
+
+  searchProducts(q) {
+    STATE.searchQ = q;
+    const filtered = PRODUCTS.filter(p=>p.name.toLowerCase().includes(q.toLowerCase()));
+    this.renderProducts('productGrid', filtered);
+  },
+
+  doSearch(q) {
+    if(q.length===0){
+      document.getElementById('searchSuggestions').style.display='block';
+      document.getElementById('searchResults').style.display='none';
+    } else {
+      document.getElementById('searchSuggestions').style.display='none';
+      document.getElementById('searchResults').style.display='block';
+      const filtered=PRODUCTS.filter(p=>p.name.toLowerCase().includes(q.toLowerCase()));
+      this.renderProducts('searchResultGrid',filtered);
+    }
+  },
+
+  quickSearch(q) {
+    document.getElementById('searchInput').value=q;
+    this.doSearch(q);
+  },
+
+  // ── CART ──
+  addToCart(id) {
+    STATE.cart[id] = (STATE.cart[id]||0)+1;
+    this.updateCartUI();
+    const p=PRODUCTS.find(x=>x.id===id);
+    this.toast('success',p.emoji,'Ditambahkan!',`${p.name} masuk ke keranjang`);
+    this.renderProducts('productGrid',PRODUCTS.filter(p=>STATE.activeCat==='semua'||p.cat===STATE.activeCat));
+  },
+
+  changeCartQty(id,delta){
+    STATE.cart[id]=(STATE.cart[id]||0)+delta;
+    if(STATE.cart[id]<=0) delete STATE.cart[id];
+    this.updateCartUI();
+    this.renderCartItems();
+  },
+
+  clearCart(){
+    STATE.cart={};
+    this.updateCartUI();
+    this.renderCartItems();
+    this.toast('info','🗑','Keranjang Dikosongkan','');
+  },
+
+  updateCartUI(){
+    const total=Object.keys(STATE.cart).reduce((a,id)=>{
+      const p=PRODUCTS.find(x=>x.id==id);
+      return a+(p?p.price*STATE.cart[id]:0);
+    },0);
+    const count=Object.values(STATE.cart).reduce((a,b)=>a+b,0);
+    const bar=document.getElementById('cartBar');
+    if(count>0){
+      bar.classList.add('visible');
+      document.getElementById('cartCount').textContent=count;
+      document.getElementById('cartTotal').textContent='Rp '+total.toLocaleString('id');
+    } else bar.classList.remove('visible');
+    document.getElementById('cartHeaderCount').textContent=count;
+  },
+
+  renderCartItems(){
+    const total=Object.keys(STATE.cart).reduce((a,id)=>{const p=PRODUCTS.find(x=>x.id==id);return a+(p?p.price*STATE.cart[id]:0);},0);
+    const count=Object.values(STATE.cart).reduce((a,b)=>a+b,0);
+    if(count===0){
+      document.getElementById('cartEmptyState').style.display='flex';
+      document.getElementById('cartWithItems').style.display='none';
+    } else {
+      document.getElementById('cartEmptyState').style.display='none';
+      document.getElementById('cartWithItems').style.display='flex';
+      document.getElementById('cartItemsListFilled').innerHTML=Object.keys(STATE.cart).map(id=>{
+        const p=PRODUCTS.find(x=>x.id==id);
+        if(!p)return'';
+        return `<div class="cart-item">
+          <div class="cart-item-thumb">${p.emoji}</div>
+          <div class="cart-item-info">
+            <div class="cart-item-name">${p.name}</div>
+            <div class="cart-item-variant">${p.canteen}</div>
+            <div class="cart-item-price">Rp ${(p.price*STATE.cart[id]).toLocaleString('id')}</div>
+          </div>
+          <div class="cart-item-ctrl">
+            <button class="cart-qty-btn minus" onclick="KK.changeCartQty(${id},-1)">−</button>
+            <span class="cart-qty-num">${STATE.cart[id]}</span>
+            <button class="cart-qty-btn plus" onclick="KK.changeCartQty(${id},1)">+</button>
+          </div>
+        </div>`;
+      }).join('');
+      document.getElementById('summSubtotal').textContent='Rp '+total.toLocaleString('id');
+      document.getElementById('summTotal').textContent='Rp '+(total+500).toLocaleString('id');
+    }
+  },
+
+  selectPayment(method, el){
+    STATE.paymentMethod=method;
+    document.querySelectorAll('#paymentOptions .payment-option').forEach(o=>{
+      o.classList.remove('selected');
+      o.querySelector('.payment-radio').classList.remove('checked');
+    });
+    el.classList.add('selected');
+    el.querySelector('.payment-radio').classList.add('checked');
+  },
+
+  placeOrder(){
+    const count=Object.values(STATE.cart).reduce((a,b)=>a+b,0);
+    if(count===0){this.toast('warning','⚠️','Keranjang Kosong','Tambah menu dulu!');return;}
+    this.toast('success','🎉','Pesanan Berhasil Dikirim!','Menunggu konfirmasi dari dapur...');
+    STATE.cart={};
+    this.updateCartUI();
+    this.renderCartItems();
+    setTimeout(()=>this.goScreen('tracking'),700);
+  },
+
+  // ── PRODUCT DETAIL ──
+  openDetail(id){
+    const p=PRODUCTS.find(x=>x.id===id);
+    if(!p)return;
+    STATE.detailBasePrice=p.price;
+    STATE.detailQty=1;
+    document.getElementById('detailQtyVal').textContent='1';
+    document.getElementById('detailPriceShow').textContent='Rp '+p.price.toLocaleString('id');
+  },
+
+  detailQty(delta){
+    STATE.detailQty=Math.max(1,STATE.detailQty+delta);
+    document.getElementById('detailQtyVal').textContent=STATE.detailQty;
+    document.getElementById('detailPriceShow').textContent='Rp '+(STATE.detailBasePrice*STATE.detailQty).toLocaleString('id');
+  },
+
+  addDetailToCart(){
+    for(let i=0;i<STATE.detailQty;i++) STATE.cart[1]=(STATE.cart[1]||0)+1;
+    this.updateCartUI();
+    this.toast('success','✅','Ditambahkan!',`Nasi Ayam Geprek ×${STATE.detailQty} ke keranjang`);
+  },
+
+  selectOption(el,groupId){
+    document.querySelectorAll(`#${groupId} .option-item`).forEach(o=>{
+      o.classList.remove('selected');
+      o.querySelector('.option-radio').classList.remove('checked');
+    });
+    el.classList.add('selected');
+    el.querySelector('.option-radio').classList.add('checked');
+  },
+
+  toggleFav(btn){
+    btn.textContent=btn.textContent==='🤍'?'❤️':'🤍';
+    this.toast(btn.textContent==='❤️'?'success':'info',btn.textContent,btn.textContent==='❤️'?'Ditambah ke Favorit':'Dihapus dari Favorit','');
+  },
+
+  // ── TRACKING SIMULATION ──
+  simulateTrack(status){
+    const statuses={
+      cooking:{emoji:'🍳',text:'Sedang Dimasak',eta:'Estimasi siap: ~10 menit'},
+      ready:{emoji:'📦',text:'Pesanan Siap Diambil!',eta:'Silakan ambil di Loket A'},
+      done:{emoji:'🎉',text:'Pesanan Selesai!',eta:'Terima kasih sudah memesan!'},
+    };
+    const s=statuses[status];
+    document.getElementById('trackEmoji').textContent=s.emoji;
+    document.getElementById('trackStatus').textContent=s.text;
+    document.getElementById('trackEta').textContent=s.eta;
+    if(status==='ready'||status==='done'){
+      document.getElementById('stepCooking').className='step-circle step-done';
+      document.getElementById('stepCooking').textContent='✓';
+      document.getElementById('lineCookingReady').classList.add('done');
+      document.getElementById('stepReady').className='step-circle '+(status==='done'?'step-done':'step-active');
+      document.getElementById('stepReady').textContent=status==='done'?'✓':'📦';
+      document.getElementById('stepReadyLabel').classList.add('active');
+    }
+    if(status==='done'){
+      document.getElementById('lineReadyDone').classList.add('done');
+      document.getElementById('stepDone').className='step-circle step-active';
+      document.getElementById('stepDoneLabel').classList.add('active');
+    }
+    this.toast('info',s.emoji,'Status Update',s.text);
+  },
+
+  // ── ORDERS ──
+  filterOrders(tab,btn){
+    document.querySelectorAll('#sc-orders .pill-tab').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    const isActive=tab==='aktif';
+    document.getElementById('activeOrder1').style.display=isActive?'flex':'none';
+    document.getElementById('activeOrder2').style.display=isActive?'flex':'none';
+    document.getElementById('historyOrders').style.display=tab==='selesai'?'flex':'none';
+    if(tab==='dibatalkan'){
+      document.getElementById('ordersList').innerHTML=`<div style="padding:40px 20px;text-align:center;color:var(--color-text-muted);"><div style="font-size:40px;margin-bottom:8px;">❌</div><div style="font-weight:700;font-size:14px;margin-bottom:4px;">Tidak Ada Pesanan Dibatalkan</div><div style="font-size:12px;">Semua pesanan kamu selesai dengan baik</div></div>`;
+    }
+  },
+
+  reorder(){
+    STATE.cart[2]=(STATE.cart[2]||0)+1;
+    this.updateCartUI();
+    this.toast('success','🔄','Pesan Lagi','Mie Goreng Spesial ditambahkan ke keranjang');
+  },
+
+  // ── NOTIFICATIONS ──
+  markAllRead(){
+    document.querySelectorAll('.notif-item.unread').forEach(n=>n.classList.remove('unread'));
+    STATE.notifUnread=0;
+    this.toast('success','✓','Semua Notifikasi Dibaca','');
+  },
+
+  openRatingModal(){this.goScreen2('rating');},
+
+  // ── TOP UP ──
+  topupWallet(){this.goScreen2('topup');},
+
+  selectTopupAmount(amount,btn){
+    STATE.topupAmount=amount;
+    document.querySelectorAll('.topup-amount-btn').forEach(b=>b.classList.remove('selected'));
+    btn.classList.add('selected');
+    document.getElementById('customTopup').value='';
+  },
+
+  customTopupInput(val){
+    STATE.topupAmount=parseInt(val)||0;
+    document.querySelectorAll('.topup-amount-btn').forEach(b=>b.classList.remove('selected'));
+  },
+
+  selectTopupMethod(m,el){
+    STATE.topupMethod=m;
+    document.querySelectorAll('.payment-option').forEach(o=>{
+      if(o.id&&o.id.startsWith('topup')){
+        o.classList.remove('selected');
+        const r=o.querySelector('.payment-radio');
+        if(r)r.classList.remove('checked');
+      }
+    });
+    el.classList.add('selected');
+    const r=el.querySelector('.payment-radio');
+    if(r)r.classList.add('checked');
+  },
+
+  processTopup(){
+    if(STATE.topupAmount===0){this.toast('warning','⚠️','Pilih Nominal','Pilih atau masukkan nominal top up');return;}
+    STATE.walletBalance+=STATE.topupAmount;
+    document.getElementById('walletBal').textContent='Rp '+STATE.walletBalance.toLocaleString('id');
+    document.getElementById('topupCurrentBal').textContent='Rp '+STATE.walletBalance.toLocaleString('id');
+    this.toast('success','💰','Top Up Berhasil!',`Rp ${STATE.topupAmount.toLocaleString('id')} masuk ke wallet kamu`);
+    setTimeout(()=>this.goScreen2('detail'),800);
+  },
+
+  // ── RATING ──
+  setRating(n){
+    STATE.currentRating=n;
+    document.querySelectorAll('.rating-star').forEach((s,i)=>s.classList.toggle('active',i<n));
+    const labels=['','Buruk','Kurang Memuaskan','Cukup Baik','Bagus!','Sangat Memuaskan! 🎉'];
+    document.getElementById('ratingLabel').textContent=labels[n];
+  },
+
+  toggleRatingTag(btn){btn.classList.toggle('active');},
+
+  submitRating(){
+    if(STATE.currentRating===0){this.toast('warning','⚠️','Pilih Rating','Berikan bintang dulu ya!');return;}
+    this.toast('success','⭐','Ulasan Dikirim!','Terima kasih, ulasanmu sangat membantu!');
+    setTimeout(()=>this.goScreen2('detail'),700);
+  },
+
+  // ── PROFILE ──
+  editProfile(){
+    this.showModal('success','Edit Profil','Fitur edit profil dengan validasi lengkap tersedia di versi final.',function(){KK.toast('info','✏️','Edit Mode','Aktifkan mode edit profil');});
+  },
+
+  // ── LIVE CLOCK ──
+  startClock(){
+    const update=()=>{
+      const now=new Date();
+      const t=now.toLocaleTimeString('id',{hour:'2-digit',minute:'2-digit',hour12:false});
+      const el=document.getElementById('liveTime');
+      if(el)el.textContent=t;
+    };
+    update();
+    setInterval(update,10000);
+  }
+};
+
+// ── INIT ──
+KK.renderProducts('productGrid');
+KK.startClock();
+// pre-render cart state
+KK.updateCartUI();
+KK.renderCartItems();
+</script>
+</body>
+</html>

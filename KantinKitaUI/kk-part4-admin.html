@@ -1,0 +1,1006 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>KantinKita — Part 4: Admin Panel</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* ============================================================ TOKENS */
+:root{
+  --c-primary-900:#081C0F;--c-primary-800:#1B4332;--c-primary-700:#2D6A4F;
+  --c-primary-600:#40916C;--c-primary-500:#52B788;--c-primary-400:#74C69D;
+  --c-primary-100:#D8F3DC;--c-primary-50:#F0FBF3;
+  --c-amber-600:#D97706;--c-amber-500:#F59E0B;--c-amber-400:#FBBF24;--c-amber-100:#FEF3C7;
+  --c-red-600:#DC2626;--c-red-500:#EF4444;--c-red-200:#FECACA;--c-red-100:#FEE2E2;
+  --c-emerald-500:#10B981;--c-emerald-100:#D1FAE5;
+  --c-blue-500:#3B82F6;--c-blue-100:#DBEAFE;
+  --c-violet-500:#8B5CF6;--c-violet-100:#EDE9FE;
+  --c-neutral-50:#F9FAFB;--c-neutral-100:#F3F4F6;--c-neutral-200:#E5E7EB;
+  --c-neutral-300:#D1D5DB;--c-neutral-400:#9CA3AF;--c-neutral-500:#6B7280;
+  --c-white:#FFFFFF;
+  /* Dark UI tokens */
+  --bg-deep:#060A0E;--bg-main:#0D1117;--bg-surface:#141920;--bg-card:#161B24;--bg-hover:#1C2333;
+  --border-main:rgba(255,255,255,0.07);--border-light:rgba(255,255,255,0.04);
+  --text-100:rgba(255,255,255,0.9);--text-200:rgba(255,255,255,0.65);
+  --text-300:rgba(255,255,255,0.4);--text-400:rgba(255,255,255,0.2);
+  --font-sans:'Plus Jakarta Sans',system-ui,sans-serif;
+  --font-mono:'JetBrains Mono',monospace;
+  --text-xs:11px;--text-sm:13px;--text-base:15px;--text-lg:18px;--text-xl:20px;
+  --fw-semibold:600;--fw-bold:700;--fw-extrabold:800;
+  --sp-1:4px;--sp-2:8px;--sp-3:12px;--sp-4:16px;--sp-5:20px;--sp-6:24px;--sp-8:32px;
+  --r-sm:6px;--r-md:10px;--r-lg:14px;--r-xl:20px;--r-full:9999px;
+  --shadow-glow:0 0 20px rgba(45,106,79,0.15);
+  --sidebar-w:210px;--topbar-h:56px;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{-webkit-font-smoothing:antialiased}
+body{font-family:var(--font-sans);background:var(--bg-main);color:var(--text-200);height:100vh;overflow:hidden}
+button,input,select,textarea{font-family:inherit}
+
+/* ============================================================ COMPONENTS */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;height:36px;padding:0 16px;border-radius:var(--r-md);font-size:var(--text-xs);font-weight:var(--fw-bold);cursor:pointer;border:1.5px solid transparent;transition:all .18s;white-space:nowrap;line-height:1}
+.btn:disabled{opacity:.4;cursor:not-allowed;pointer-events:none}
+.btn-primary{background:var(--c-primary-700);color:#fff;border-color:var(--c-primary-700)}
+.btn-primary:hover{background:var(--c-primary-800);transform:translateY(-1px);box-shadow:0 4px 12px rgba(45,106,79,.4)}
+.btn-ghost{background:transparent;color:var(--text-300);border-color:rgba(255,255,255,.12)}
+.btn-ghost:hover{background:rgba(255,255,255,.06);color:var(--text-100)}
+.btn-danger-outline{background:rgba(239,68,68,.08);color:#FCA5A5;border-color:rgba(239,68,68,.2)}
+.btn-danger-outline:hover{background:rgba(239,68,68,.15)}
+.btn-sm{height:28px;padding:0 10px;font-size:10px;border-radius:var(--r-sm)}
+.btn-lg{height:44px;padding:0 24px;font-size:var(--text-sm)}
+.btn-block{width:100%}
+
+.input{width:100%;height:36px;padding:0 10px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);border-radius:var(--r-sm);font-size:var(--text-xs);color:var(--text-100);outline:none;transition:border-color .15s,box-shadow .15s}
+.input:focus{border-color:rgba(82,183,136,.5);box-shadow:0 0 0 3px rgba(82,183,136,.08)}
+.input::placeholder{color:var(--text-400)}
+.input select{color:var(--text-100)}
+select.input option{background:var(--bg-card);color:#fff}
+.lbl{font-size:11px;font-weight:700;color:var(--text-300);margin-bottom:5px;display:block;text-transform:uppercase;letter-spacing:.5px}
+.fg{margin-bottom:12px}
+
+.badge{display:inline-flex;align-items:center;gap:5px;padding:2px 8px;border-radius:var(--r-full);font-size:10px;font-weight:700;letter-spacing:.2px}
+.badge-dot{width:5px;height:5px;border-radius:50%;background:currentColor}
+.badge-ok{background:rgba(16,185,129,.12);color:#6EE7B7}
+.badge-warn{background:rgba(245,158,11,.12);color:#FCD34D}
+.badge-err{background:rgba(239,68,68,.12);color:#FCA5A5}
+.badge-info{background:rgba(59,130,246,.12);color:#93C5FD}
+.badge-neu{background:rgba(255,255,255,.06);color:var(--text-300)}
+.badge-violet{background:rgba(139,92,246,.12);color:#C4B5FD}
+
+.toggle{width:38px;height:20px;border-radius:var(--r-full);cursor:pointer;transition:background .2s;position:relative;flex-shrink:0;border:none;outline:none}
+.toggle::after{content:'';position:absolute;width:14px;height:14px;border-radius:50%;background:#fff;top:3px;box-shadow:0 1px 3px rgba(0,0,0,.3);transition:left .2s}
+.toggle.on{background:var(--c-primary-500)}.toggle.on::after{left:calc(100% - 17px)}
+.toggle.off{background:rgba(255,255,255,.15)}.toggle.off::after{left:3px}
+
+/* ============================================================ LAYOUT */
+.role-bar{background:var(--bg-deep);border-bottom:1px solid rgba(255,255,255,.05);padding:0 20px;display:flex;align-items:center;height:44px;gap:10px;flex-shrink:0;z-index:1000}
+.rl-mark{width:26px;height:26px;background:var(--c-primary-700);border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;color:#fff}
+.rl-text{font-size:14px;font-weight:800;color:#fff}
+.rl-ver{background:rgba(82,183,136,.15);color:var(--c-primary-400);font-size:9px;font-weight:700;padding:2px 5px;border-radius:3px}
+.rt{display:flex;align-items:center;gap:5px;padding:5px 12px;border-radius:var(--r-full);font-size:11px;font-weight:700;cursor:pointer;border:1.5px solid transparent;transition:all .2s;color:rgba(255,255,255,.35);background:transparent;white-space:nowrap}
+.rt:hover{color:rgba(255,255,255,.7);background:rgba(255,255,255,.04)}
+.rt.active{background:rgba(45,106,79,.18);border-color:rgba(45,106,79,.35);color:var(--c-primary-400)}
+.sb-tag{background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.22);color:var(--c-amber-400);font-size:9px;font-weight:700;padding:2px 6px;border-radius:3px}
+.pb-tag{background:rgba(59,130,246,.1);border:1px solid rgba(59,130,246,.22);color:#93C5FD;font-size:9px;font-weight:700;padding:2px 6px;border-radius:3px}
+
+.app-wrap{display:flex;height:calc(100vh - 44px);overflow:hidden}
+
+/* Sidebar */
+.sidebar{width:var(--sidebar-w);background:var(--bg-deep);display:flex;flex-direction:column;flex-shrink:0;border-right:1px solid var(--border-main)}
+.sb-header{height:var(--topbar-h);display:flex;align-items:center;gap:10px;padding:0 14px;border-bottom:1px solid var(--border-main);flex-shrink:0}
+.sb-mark{width:28px;height:28px;background:var(--c-primary-700);border-radius:var(--r-sm);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:#fff}
+.sb-brand{font-size:14px;font-weight:800;color:#fff}
+.sb-sys{background:rgba(82,183,136,.12);color:var(--c-primary-400);font-size:9px;font-weight:700;padding:2px 5px;border-radius:3px}
+.sb-nav{flex:1;padding:6px;overflow-y:auto}
+.sb-section{padding:10px 8px 3px;font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-400)}
+.sb-item{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:var(--r-sm);font-size:12px;font-weight:600;color:var(--text-300);cursor:pointer;transition:all .15s;margin-bottom:1px}
+.sb-item:hover{background:rgba(255,255,255,.05);color:var(--text-100)}
+.sb-item.active{background:rgba(45,106,79,.15);color:var(--c-primary-400)}
+.sb-item-icon{font-size:14px;flex-shrink:0;width:16px;text-align:center}
+.sb-chip{margin-left:auto;background:var(--c-amber-500);color:#1A1200;font-size:9px;font-weight:800;padding:2px 5px;border-radius:var(--r-full)}
+.sb-chip.red{background:var(--c-red-500);color:#fff}
+.sb-footer{padding:10px 14px;border-top:1px solid var(--border-main);display:flex;align-items:center;gap:8px}
+.sb-ava{width:28px;height:28px;border-radius:50%;background:rgba(255,255,255,.1);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:#fff}
+.sb-uname{font-size:12px;font-weight:600;color:var(--text-100)}
+.sb-urole{font-size:10px;color:var(--text-400)}
+
+/* Main */
+.main-area{flex:1;display:flex;flex-direction:column;overflow:hidden}
+.topbar{height:var(--topbar-h);background:var(--bg-surface);border-bottom:1px solid var(--border-main);display:flex;align-items:center;justify-content:space-between;padding:0 20px;flex-shrink:0}
+.topbar-title{font-size:18px;font-weight:800;color:var(--text-100);letter-spacing:-.3px}
+.topbar-sub{font-size:11px;color:var(--text-400);margin-top:1px}
+.topbar-right{display:flex;align-items:center;gap:8px}
+
+.subpage{display:none;flex:1;overflow:hidden;flex-direction:column}
+.subpage.active{display:flex}
+.scroll-area{flex:1;overflow-y:auto;padding:16px}
+
+/* ============================================================ DARK PANELS */
+.panel{background:var(--bg-card);border:1px solid var(--border-main);border-radius:var(--r-lg);overflow:hidden;margin-bottom:12px}
+.panel-header{padding:12px 16px;border-bottom:1px solid var(--border-main);display:flex;align-items:center;justify-content:space-between;gap:8px;flex-shrink:0}
+.panel-title{font-size:13px;font-weight:700;color:var(--text-100)}
+.panel-body{padding:16px}
+
+.tbl{width:100%;border-collapse:collapse}
+.tbl th{text-align:left;padding:8px 14px;font-size:10px;font-weight:700;color:var(--text-400);text-transform:uppercase;letter-spacing:.8px;background:rgba(255,255,255,.02);border-bottom:1px solid var(--border-main);white-space:nowrap}
+.tbl td{padding:11px 14px;font-size:12px;color:var(--text-200);border-bottom:1px solid var(--border-light);vertical-align:middle}
+.tbl tr:last-child td{border-bottom:none}
+.tbl tbody tr:hover td{background:rgba(255,255,255,.02)}
+.tbl .tx-strong{color:var(--text-100);font-weight:600}
+.tbl .tx-mono{font-family:var(--font-mono);font-size:10px;color:var(--text-400)}
+
+.stat-grid{display:grid;gap:10px;margin-bottom:12px}
+.sg4{grid-template-columns:repeat(4,1fr)}.sg3{grid-template-columns:repeat(3,1fr)}.sg2{grid-template-columns:1fr 1fr}
+.stat-card{background:var(--bg-card);border:1px solid var(--border-main);border-radius:var(--r-lg);padding:14px}
+.stat-val{font-size:22px;font-weight:800;letter-spacing:-.5px;margin-bottom:3px}
+.stat-label{font-size:11px;color:var(--text-400)}
+.stat-change{font-size:11px;font-weight:600;margin-top:6px}
+.up{color:var(--c-primary-400)}.down{color:#FCA5A5}.flat{color:var(--c-amber-400)}
+
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+
+/* Chart bars - dark */
+.chart-wrap{display:flex;align-items:flex-end;gap:5px}
+.c-col{display:flex;flex-direction:column;align-items:center;gap:4px;flex:1}
+.c-bar{width:100%;border-radius:2px 2px 0 0;transition:opacity .2s;cursor:pointer}
+.c-bar:hover{opacity:.75}
+.c-bar.green{background:var(--c-primary-600)}.c-bar.bright{background:var(--c-primary-500)}.c-bar.amber{background:var(--c-amber-400)}.c-bar.dim{background:rgba(82,183,136,.3)}
+.c-lbl{font-size:10px;color:var(--text-400);font-family:var(--font-mono)}
+
+/* Audit log */
+.audit-row{display:flex;gap:10px;padding:10px 14px;border-bottom:1px solid var(--border-light);align-items:flex-start}
+.audit-row:last-child{border-bottom:none}
+.audit-row.danger-row{background:rgba(239,68,68,.03);border-left:2px solid rgba(239,68,68,.3)}
+.audit-time{font-family:var(--font-mono);font-size:10px;color:var(--text-400);white-space:nowrap;min-width:64px;padding-top:1px}
+.audit-msg{flex:1;font-size:12px;color:var(--text-200);line-height:1.4}
+.audit-msg strong{color:var(--text-100);font-weight:600}
+.audit-tag{font-size:9px;font-weight:700;padding:2px 6px;border-radius:3px;white-space:nowrap;flex-shrink:0}
+.at-danger{background:rgba(239,68,68,.12);color:#FCA5A5}
+.at-update{background:rgba(59,130,246,.12);color:#93C5FD}
+.at-system{background:rgba(16,185,129,.12);color:#6EE7B7}
+.at-auto{background:rgba(245,158,11,.12);color:#FCD34D}
+.at-warn{background:rgba(245,158,11,.12);color:#FCD34D}
+
+/* Error monitor */
+.error-row{padding:10px 14px;border-bottom:1px solid var(--border-light);border-left:2px solid}
+.error-row:last-child{border-bottom:none}
+.error-crit{border-left-color:var(--c-red-500);background:rgba(239,68,68,.03)}
+.error-warn{border-left-color:var(--c-amber-400);background:rgba(245,158,11,.03)}
+.error-info{border-left-color:var(--c-blue-500);background:rgba(59,130,246,.03)}
+.error-code{font-family:var(--font-mono);font-size:10px;color:var(--text-400);margin-bottom:2px}
+.error-msg{font-size:12px;color:var(--text-100);font-weight:600;margin-bottom:2px}
+.error-meta{font-size:10px;color:var(--text-400)}
+
+/* Metric row */
+.metric-row{display:flex;justify-content:space-between;align-items:center;padding:8px 14px;border-bottom:1px solid var(--border-light)}
+.metric-row:last-child{border-bottom:none}
+.metric-name{font-size:12px;color:var(--text-300)}
+.metric-val{font-size:12px;font-weight:700;font-family:var(--font-mono)}
+
+/* Backup cards */
+.backup-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;padding:12px}
+.backup-card{background:rgba(255,255,255,.03);border:1px solid var(--border-main);border-radius:var(--r-md);padding:10px}
+.backup-type-full{font-size:10px;font-weight:800;color:var(--c-primary-400);margin-bottom:3px}
+.backup-type-incr{font-size:10px;font-weight:800;color:#93C5FD;margin-bottom:3px}
+.backup-date{font-size:12px;color:var(--text-100);font-weight:600;margin-bottom:2px}
+.backup-meta{font-size:10px;color:var(--text-400)}
+
+/* Toast / Modal */
+.toast-container{position:fixed;bottom:20px;right:20px;z-index:9999;display:flex;flex-direction:column;gap:8px;pointer-events:none}
+.toast{display:flex;align-items:flex-start;gap:10px;padding:12px 16px;background:var(--bg-card);border:1px solid var(--border-main);border-radius:var(--r-lg);box-shadow:0 12px 32px rgba(0,0,0,.4);max-width:320px;animation:tin .25s ease;pointer-events:all}
+.t-icon{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0}
+.t-body{flex:1}.t-title{font-size:12px;font-weight:700;color:var(--text-100);margin-bottom:2px}.t-msg{font-size:11px;color:var(--text-300)}
+.toast.s{border-left:3px solid var(--c-primary-500)}.toast.s .t-icon{background:rgba(82,183,136,.15);color:var(--c-primary-400)}
+.toast.e{border-left:3px solid var(--c-red-500)}.toast.e .t-icon{background:rgba(239,68,68,.12);color:#FCA5A5}
+.toast.w{border-left:3px solid var(--c-amber-400)}.toast.w .t-icon{background:rgba(245,158,11,.12);color:#FCD34D}
+.toast.i{border-left:3px solid var(--c-blue-500)}.toast.i .t-icon{background:rgba(59,130,246,.12);color:#93C5FD}
+@keyframes tin{from{opacity:0;transform:translateX(20px)}to{opacity:1;transform:translateX(0)}}
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.65);backdrop-filter:blur(6px);z-index:8000;display:flex;align-items:center;justify-content:center;padding:20px;opacity:0;pointer-events:none;transition:opacity .2s}
+.modal-overlay.open{opacity:1;pointer-events:all}
+.modal-box{background:var(--bg-card);border:1px solid var(--border-main);border-radius:var(--r-xl);padding:24px;width:100%;max-width:440px;box-shadow:0 40px 80px rgba(0,0,0,.5);transform:scale(.95);transition:transform .2s}
+.modal-overlay.open .modal-box{transform:scale(1)}
+.modal-icon{width:52px;height:52px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:24px;margin-bottom:14px}
+.modal-icon.ok{background:rgba(82,183,136,.12)}.modal-icon.danger{background:rgba(239,68,68,.12)}.modal-icon.warn{background:rgba(245,158,11,.12)}
+.modal-title{font-size:18px;font-weight:800;color:var(--text-100);margin-bottom:8px}
+.modal-body{font-size:13px;color:var(--text-300);line-height:1.6;margin-bottom:20px}
+.modal-actions{display:flex;gap:10px}
+.modal-btn{flex:1;height:38px;border-radius:var(--r-md);font-size:13px;font-weight:700;cursor:pointer;border:none;transition:all .15s}
+.modal-btn.cancel{background:rgba(255,255,255,.06);color:var(--text-200);border:1px solid rgba(255,255,255,.1)}
+.modal-btn.confirm{background:var(--c-primary-700);color:#fff}
+.modal-btn.danger{background:var(--c-red-500);color:#fff}
+.modal-btn.cancel:hover{background:rgba(255,255,255,.1)}
+.modal-btn.confirm:hover{background:var(--c-primary-800)}
+.modal-btn.danger:hover{background:var(--c-red-600)}
+
+/* Tenant status pill in table */
+.ts-active{color:var(--c-primary-400)}.ts-suspended{color:#FCA5A5}.ts-trial{color:var(--c-amber-400)}
+
+/* Permission grid */
+.perm-grid{display:grid;grid-template-columns:200px repeat(5,1fr);gap:0;border:1px solid var(--border-main);border-radius:var(--r-lg);overflow:hidden}
+.perm-header{background:rgba(255,255,255,.03);padding:10px 14px;font-size:10px;font-weight:700;color:var(--text-400);text-transform:uppercase;letter-spacing:.8px;border-bottom:1px solid var(--border-main);text-align:center}
+.perm-header:first-child{text-align:left}
+.perm-row{display:contents}
+.perm-cell{padding:10px 14px;font-size:12px;color:var(--text-200);border-bottom:1px solid var(--border-light);display:flex;align-items:center;justify-content:center}
+.perm-cell:first-child{justify-content:flex-start;font-weight:600}
+.perm-row:last-child .perm-cell{border-bottom:none}
+.perm-yes{color:var(--c-primary-400);font-size:14px}
+.perm-no{color:rgba(255,255,255,.2);font-size:14px}
+.perm-partial{color:var(--c-amber-400);font-size:14px}
+</style>
+</head>
+<body>
+
+<div class="toast-container" id="TC"></div>
+<div class="modal-overlay" id="MO">
+  <div class="modal-box">
+    <div class="modal-icon" id="MI">⚠️</div>
+    <div class="modal-title" id="MT">Konfirmasi</div>
+    <div class="modal-body" id="MB">Lanjutkan?</div>
+    <div class="modal-actions">
+      <button class="modal-btn cancel" onclick="ADM.closeModal()">Batal</button>
+      <button class="modal-btn confirm" id="MCB" onclick="ADM.confirmModal()">Ya, Lanjutkan</button>
+    </div>
+  </div>
+</div>
+
+<!-- ROLE BAR -->
+<div class="role-bar">
+  <div style="display:flex;align-items:center;gap:6px;margin-right:10px;">
+    <div class="rl-mark">KK</div><div class="rl-text">KantinKita</div><div class="rl-ver">v2.0</div>
+  </div>
+  <span style="color:rgba(255,255,255,.15);font-size:16px;">|</span>
+  <span style="font-size:10px;font-weight:600;color:rgba(255,255,255,.2);letter-spacing:1px;text-transform:uppercase;">Mode:</span>
+  <div style="display:flex;gap:3px;">
+    <button class="rt" onclick="window.open('kk-part1-customer.html')">📱 Customer</button>
+    <button class="rt" onclick="window.open('kk-part2-kasir.html')">🧾 Kasir</button>
+    <button class="rt" onclick="window.open('kk-part3-merchant.html')">📊 Merchant</button>
+    <button class="rt active">⚙️ Admin</button>
+  </div>
+  <div style="margin-left:auto;display:flex;gap:6px;"><span class="pb-tag">PART 4 / 4</span><span class="sb-tag">SANDBOX</span></div>
+</div>
+
+<div class="app-wrap">
+  <!-- ═══════════ SIDEBAR ═══════════ -->
+  <div class="sidebar">
+    <div class="sb-header">
+      <div class="sb-mark">KK</div>
+      <div><div class="sb-brand">Admin</div></div>
+      <div class="sb-sys">SYSTEM</div>
+    </div>
+    <div class="sb-nav">
+      <div class="sb-section">Overview</div>
+      <div class="sb-item active" onclick="ADM.go('analytics',this)"><span class="sb-item-icon">📊</span>Global Analytics</div>
+      <div class="sb-item" onclick="ADM.go('realtime',this)"><span class="sb-item-icon">⚡</span>Live Dashboard</div>
+      <div class="sb-section">Tenant & User</div>
+      <div class="sb-item" onclick="ADM.go('tenants',this)"><span class="sb-item-icon">🏪</span>Tenant Management</div>
+      <div class="sb-item" onclick="ADM.go('users',this)"><span class="sb-item-icon">👥</span>User Management</div>
+      <div class="sb-item" onclick="ADM.go('roles',this)"><span class="sb-item-icon">🔐</span>Roles & Permissions</div>
+      <div class="sb-section">Finance</div>
+      <div class="sb-item" onclick="ADM.go('finance',this)"><span class="sb-item-icon">💰</span>Platform Finance</div>
+      <div class="sb-item" onclick="ADM.go('subscriptions',this)"><span class="sb-item-icon">💳</span>Subscriptions</div>
+      <div class="sb-section">System</div>
+      <div class="sb-item" onclick="ADM.go('config',this)"><span class="sb-item-icon">⚙️</span>Configuration</div>
+      <div class="sb-item" onclick="ADM.go('audit',this)"><span class="sb-item-icon">📜</span>Audit Log</div>
+      <div class="sb-item" onclick="ADM.go('monitor',this)"><span class="sb-item-icon">🚨</span>Error Monitor<span class="sb-chip red" id="errorBadge">2</span></div>
+      <div class="sb-item" onclick="ADM.go('backup',this)"><span class="sb-item-icon">💾</span>Backup & Restore</div>
+      <div class="sb-item" onclick="ADM.go('notifications',this)"><span class="sb-item-icon">📢</span>Broadcast Notif</div>
+    </div>
+    <div class="sb-footer">
+      <div class="sb-ava">SA</div>
+      <div><div class="sb-uname">Super Admin</div><div class="sb-urole">System Administrator</div></div>
+    </div>
+  </div>
+
+  <!-- ═══════════ MAIN ═══════════ -->
+  <div class="main-area">
+    <div class="topbar">
+      <div>
+        <div class="topbar-title" id="pageTitle">Global Analytics Dashboard</div>
+        <div class="topbar-sub" id="pageSub">Semua tenant · Platform overview · Maret 2026</div>
+      </div>
+      <div class="topbar-right">
+        <span class="badge badge-ok"><span class="badge-dot"></span>All Systems Operational</span>
+        <span id="clock" style="font-family:var(--font-mono);font-size:11px;color:var(--text-400);"></span>
+        <button class="btn btn-ghost" onclick="ADM.toast('i','📤','Export','Laporan platform diekspor ke Excel')">↑ Export</button>
+        <button class="btn btn-primary" onclick="ADM.showAddTenantModal()">+ Tenant</button>
+      </div>
+    </div>
+
+    <!-- ══ PAGE: ANALYTICS ══ -->
+    <div class="subpage active" id="page-analytics">
+      <div class="scroll-area">
+        <div class="stat-grid sg4">
+          <div class="stat-card"><div class="stat-val" style="color:var(--c-primary-400);">47</div><div class="stat-label">Total Tenant Aktif</div><div class="stat-change up">▲ +5 bulan ini</div></div>
+          <div class="stat-card"><div class="stat-val" style="color:#FBBF24;">12.847</div><div class="stat-label">Total Pengguna</div><div class="stat-change up">▲ +892</div></div>
+          <div class="stat-card"><div class="stat-val" style="color:#93C5FD;">98.847</div><div class="stat-label">Total Transaksi</div><div class="stat-change up">▲ +12.4%</div></div>
+          <div class="stat-card"><div class="stat-val" style="color:var(--c-primary-400);">Rp 1.2M</div><div class="stat-label">GMV Platform</div><div class="stat-change up">▲ +21% MoM</div></div>
+        </div>
+        <div class="g2">
+          <div class="panel" style="margin-bottom:0;">
+            <div class="panel-header"><div class="panel-title">📈 Transaksi Harian (7 Hari)</div></div>
+            <div class="panel-body">
+              <div class="chart-wrap" style="height:100px;">
+                <div class="c-col"><div class="c-bar green" style="height:55%;"></div><div class="c-lbl">Sen</div></div>
+                <div class="c-col"><div class="c-bar green" style="height:70%;"></div><div class="c-lbl">Sel</div></div>
+                <div class="c-col"><div class="c-bar green" style="height:62%;"></div><div class="c-lbl">Rab</div></div>
+                <div class="c-col"><div class="c-bar bright" style="height:85%;"></div><div class="c-lbl">Kam</div></div>
+                <div class="c-col"><div class="c-bar amber" style="height:100%;"></div><div class="c-lbl">Jum</div></div>
+                <div class="c-col"><div class="c-bar bright" style="height:92%;"></div><div class="c-lbl">Sab</div></div>
+                <div class="c-col"><div class="c-bar green" style="height:75%;"></div><div class="c-lbl">Min</div></div>
+              </div>
+            </div>
+          </div>
+          <div class="panel" style="margin-bottom:0;">
+            <div class="panel-header"><div class="panel-title">🏪 Top Tenant (GMV Bulan Ini)</div></div>
+            <div class="panel-body">
+              <div style="display:flex;flex-direction:column;gap:8px;">
+                <div style="display:flex;align-items:center;gap:8px;"><span style="font-size:18px;">🍛</span><span style="flex:1;font-size:12px;font-weight:600;color:var(--text-100);">Cafetaria Corp X</span><div style="flex:2;height:6px;background:rgba(255,255,255,.06);border-radius:3px;overflow:hidden;"><div style="height:100%;width:100%;background:var(--c-primary-500);border-radius:3px;"></div></div><span style="font-size:11px;font-weight:700;font-family:var(--font-mono);color:var(--c-primary-400);white-space:nowrap;">Rp 124K</span></div>
+                <div style="display:flex;align-items:center;gap:8px;"><span style="font-size:18px;">☕</span><span style="flex:1;font-size:12px;font-weight:600;color:var(--text-100);">Kantin Pak Budi</span><div style="flex:2;height:6px;background:rgba(255,255,255,.06);border-radius:3px;overflow:hidden;"><div style="height:100%;width:78%;background:var(--c-primary-400);border-radius:3px;"></div></div><span style="font-size:11px;font-weight:700;font-family:var(--font-mono);color:var(--c-primary-400);white-space:nowrap;">Rp 97K</span></div>
+                <div style="display:flex;align-items:center;gap:8px;"><span style="font-size:18px;">🥤</span><span style="flex:1;font-size:12px;font-weight:600;color:var(--text-100);">Warung Bu Sari</span><div style="flex:2;height:6px;background:rgba(255,255,255,.06);border-radius:3px;overflow:hidden;"><div style="height:100%;width:55%;background:var(--c-primary-400);border-radius:3px;"></div></div><span style="font-size:11px;font-weight:700;font-family:var(--font-mono);color:var(--c-primary-400);white-space:nowrap;">Rp 68K</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="g3" style="margin-top:12px;">
+          <div class="stat-card"><div class="stat-val" style="color:#FCD34D;">Rp 120K</div><div class="stat-label">Platform Revenue (Fee 10%)</div><div class="stat-change up">▲ +21%</div></div>
+          <div class="stat-card"><div class="stat-val" style="color:#93C5FD;">99.97%</div><div class="stat-label">Platform Uptime (30 hari)</div><div class="stat-change up">▲ Excellent</div></div>
+          <div class="stat-card"><div class="stat-val" style="color:var(--c-primary-400);">42ms</div><div class="stat-label">Avg API Latency</div><div class="stat-change up">▲ Fast</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ PAGE: LIVE DASHBOARD ══ -->
+    <div class="subpage" id="page-realtime">
+      <div class="scroll-area">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+          <div style="font-size:16px;font-weight:800;color:var(--text-100);">Live Platform Monitor</div>
+          <div style="display:flex;gap:6px;">
+            <span class="badge badge-ok"><span class="badge-dot"></span>Live</span>
+            <button class="btn btn-ghost btn-sm" onclick="ADM.refreshLive()">🔄 Refresh</button>
+          </div>
+        </div>
+        <div class="stat-grid sg4">
+          <div class="stat-card"><div class="stat-val up" id="liveSessions">1.847</div><div class="stat-label">Active Sessions</div></div>
+          <div class="stat-card"><div class="stat-val" style="color:#FCD34D;" id="liveOrders">342</div><div class="stat-label">Orders Hari Ini</div></div>
+          <div class="stat-card"><div class="stat-val" style="color:var(--c-primary-400);" id="liveGMV">Rp 3.2M</div><div class="stat-label">GMV Hari Ini</div></div>
+          <div class="stat-card"><div class="stat-val up" id="liveUptime">99.97%</div><div class="stat-label">Uptime</div></div>
+        </div>
+        <div class="g2">
+          <div class="panel" style="margin-bottom:0;">
+            <div class="panel-header"><div class="panel-title">📡 Realtime API Health</div><span class="badge badge-ok"><span class="badge-dot"></span>Healthy</span></div>
+            <div>
+              <div class="metric-row"><span class="metric-name">API Latency (avg)</span><span class="metric-val up">42ms</span></div>
+              <div class="metric-row"><span class="metric-name">API Latency (p99)</span><span class="metric-val" style="color:#FCD34D;">187ms</span></div>
+              <div class="metric-row"><span class="metric-name">Request per Menit</span><span class="metric-val up" id="rpmVal">1.240</span></div>
+              <div class="metric-row"><span class="metric-name">Error Rate</span><span class="metric-val up">0.03%</span></div>
+              <div class="metric-row"><span class="metric-name">DB Pool Usage</span><span class="metric-val" style="color:#FCD34D;" id="dbPool">78%</span></div>
+              <div class="metric-row"><span class="metric-name">Cache Hit Rate</span><span class="metric-val up">94%</span></div>
+              <div class="metric-row"><span class="metric-name">Storage Used</span><span class="metric-val up">234 / 1024 GB</span></div>
+            </div>
+          </div>
+          <div class="panel" style="margin-bottom:0;">
+            <div class="panel-header"><div class="panel-title">🌐 Service Status</div></div>
+            <div>
+              <div class="metric-row"><span class="metric-name">🟢 API Gateway</span><span class="metric-val up">Operational</span></div>
+              <div class="metric-row"><span class="metric-name">🟢 Database (PostgreSQL)</span><span class="metric-val up">Operational</span></div>
+              <div class="metric-row"><span class="metric-name">🟢 Redis Cache</span><span class="metric-val up">Operational</span></div>
+              <div class="metric-row"><span class="metric-name">🟡 Payment Gateway</span><span class="metric-val" style="color:#FCD34D;">Degraded</span></div>
+              <div class="metric-row"><span class="metric-name">🟢 Push Notification</span><span class="metric-val up">Operational</span></div>
+              <div class="metric-row"><span class="metric-name">🟢 Object Storage (S3)</span><span class="metric-val up">Operational</span></div>
+              <div class="metric-row"><span class="metric-name">🟢 CDN</span><span class="metric-val up">Operational</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ PAGE: TENANTS ══ -->
+    <div class="subpage" id="page-tenants">
+      <div class="scroll-area">
+        <div class="stat-grid sg4">
+          <div class="stat-card"><div class="stat-val" style="color:var(--c-primary-400);">47</div><div class="stat-label">Total Aktif</div></div>
+          <div class="stat-card"><div class="stat-val" style="color:#FCA5A5;">2</div><div class="stat-label">Suspended</div></div>
+          <div class="stat-card"><div class="stat-val" style="color:#FCD34D;">5</div><div class="stat-label">Trial</div></div>
+          <div class="stat-card"><div class="stat-val" style="color:#93C5FD;">3</div><div class="stat-label">Baru Bulan Ini</div></div>
+        </div>
+        <div class="panel" style="margin-bottom:0;">
+          <div class="panel-header">
+            <div class="panel-title">🏪 Tenant Management</div>
+            <div style="display:flex;gap:6px;">
+              <input class="input" style="width:160px;" placeholder="Cari tenant..." oninput="ADM.filterTenants(this.value)">
+              <select class="input" style="width:120px;" onchange="ADM.filterTenantStatus(this.value)"><option value="all">Semua Status</option><option value="aktif">Aktif</option><option value="suspended">Suspended</option><option value="trial">Trial</option></select>
+            </div>
+          </div>
+          <table class="tbl" id="tenantsTable">
+            <thead><tr><th>Tenant</th><th>Instansi</th><th>Paket</th><th>Tx/Bln</th><th>GMV</th><th>Status</th><th>Bergabung</th><th>Aksi</th></tr></thead>
+            <tbody id="tenantsTbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ PAGE: USERS ══ -->
+    <div class="subpage" id="page-users">
+      <div class="scroll-area">
+        <div class="stat-grid sg4">
+          <div class="stat-card"><div class="stat-val" style="color:var(--c-primary-400);">12.847</div><div class="stat-label">Total Users</div><div class="stat-change up">▲ +892 bulan ini</div></div>
+          <div class="stat-card"><div class="stat-val" style="color:#93C5FD;">12.658</div><div class="stat-label">Customer</div></div>
+          <div class="stat-card"><div class="stat-val" style="color:#FCD34D;">142</div><div class="stat-label">Staff Kasir</div></div>
+          <div class="stat-card"><div class="stat-val" style="color:#C4B5FD;">47</div><div class="stat-label">Merchant</div></div>
+        </div>
+        <div class="panel" style="margin-bottom:0;">
+          <div class="panel-header">
+            <div class="panel-title">👥 User Management</div>
+            <div style="display:flex;gap:6px;">
+              <input class="input" style="width:180px;" placeholder="Cari nama / email..." oninput="ADM.filterUsers(this.value)">
+              <select class="input" style="width:120px;"><option>Semua Role</option><option>Customer</option><option>Staff</option><option>Merchant</option><option>Admin</option></select>
+              <button class="btn btn-primary btn-sm" onclick="ADM.showAddUserModal()">+ User</button>
+            </div>
+          </div>
+          <table class="tbl" id="usersTable">
+            <thead><tr><th>Nama</th><th>Email</th><th>Role</th><th>Tenant</th><th>Bergabung</th><th>Last Active</th><th>Status</th><th>Aksi</th></tr></thead>
+            <tbody id="usersTbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ PAGE: ROLES ══ -->
+    <div class="subpage" id="page-roles">
+      <div class="scroll-area">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+          <div style="font-size:16px;font-weight:800;color:var(--text-100);">Roles & Permissions</div>
+          <button class="btn btn-primary btn-sm" onclick="ADM.toast('i','➕','Role Baru','Form tambah role kustom dibuka')">+ Custom Role</button>
+        </div>
+        <div class="panel" style="margin-bottom:12px;">
+          <div class="panel-header"><div class="panel-title">🔐 Permission Matrix</div></div>
+          <div class="perm-grid">
+            <div class="perm-header">Role</div>
+            <div class="perm-header">POS / Kasir</div>
+            <div class="perm-header">Analytics</div>
+            <div class="perm-header">User Mgmt</div>
+            <div class="perm-header">Tenant Mgmt</div>
+            <div class="perm-header">System Config</div>
+            <div class="perm-row"><div class="perm-cell" style="font-weight:800;color:var(--c-primary-400);">👑 Super Admin</div><div class="perm-cell perm-yes">✓</div><div class="perm-cell perm-yes">✓</div><div class="perm-cell perm-yes">✓</div><div class="perm-cell perm-yes">✓</div><div class="perm-cell perm-yes">✓</div></div>
+            <div class="perm-row"><div class="perm-cell" style="font-weight:700;color:#FCD34D;">🏪 Merchant Owner</div><div class="perm-cell perm-yes">✓</div><div class="perm-cell perm-yes">✓</div><div class="perm-cell perm-partial">⚠️</div><div class="perm-cell perm-no">✗</div><div class="perm-cell perm-no">✗</div></div>
+            <div class="perm-row"><div class="perm-cell" style="font-weight:700;color:#93C5FD;">🧾 Staff Kasir</div><div class="perm-cell perm-yes">✓</div><div class="perm-cell perm-no">✗</div><div class="perm-cell perm-no">✗</div><div class="perm-cell perm-no">✗</div><div class="perm-cell perm-no">✗</div></div>
+            <div class="perm-row"><div class="perm-cell" style="font-weight:700;color:var(--text-300);">👤 Customer</div><div class="perm-cell perm-no">✗</div><div class="perm-cell perm-no">✗</div><div class="perm-cell perm-no">✗</div><div class="perm-cell perm-no">✗</div><div class="perm-cell perm-no">✗</div></div>
+          </div>
+          <div style="padding:12px 16px;font-size:11px;color:var(--text-400);">⚠️ = Terbatas (toko sendiri saja)</div>
+        </div>
+        <div class="panel" style="margin-bottom:0;">
+          <div class="panel-header"><div class="panel-title">🔑 API Key Management</div><button class="btn btn-primary btn-sm" onclick="ADM.generateApiKey()">+ Generate Key</button></div>
+          <table class="tbl" id="apiKeyTable">
+            <thead><tr><th>Nama</th><th>Key</th><th>Scope</th><th>Dibuat</th><th>Last Used</th><th>Aksi</th></tr></thead>
+            <tbody>
+              <tr><td class="tx-strong">Production API</td><td><span class="tx-mono">kk_live_••••••••••••3a7f</span></td><td><span class="badge badge-ok">read · write</span></td><td class="tx-mono">01 Jan 2026</td><td class="tx-mono">15 Mar 2026</td><td><button class="btn btn-ghost btn-sm" onclick="ADM.toast('w','🗑','API Key Dicabut','Semua request dengan key ini akan ditolak')">Revoke</button></td></tr>
+              <tr><td class="tx-strong">Analytics Read</td><td><span class="tx-mono">kk_live_••••••••••••9c2e</span></td><td><span class="badge badge-info">read-only</span></td><td class="tx-mono">15 Feb 2026</td><td class="tx-mono">14 Mar 2026</td><td><button class="btn btn-ghost btn-sm" onclick="ADM.toast('w','🗑','API Key Dicabut','Key Analytics Read dicabut')">Revoke</button></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ PAGE: FINANCE ══ -->
+    <div class="subpage" id="page-finance">
+      <div class="scroll-area">
+        <div class="stat-grid sg4">
+          <div class="stat-card"><div class="stat-val" style="color:var(--c-primary-400);">Rp 120K</div><div class="stat-label">Platform Revenue (Bulan Ini)</div><div class="stat-change up">▲ +21%</div></div>
+          <div class="stat-card"><div class="stat-val" style="color:#FCD34D;">Rp 1.2M</div><div class="stat-label">Total GMV</div><div class="stat-change up">▲ +18%</div></div>
+          <div class="stat-card"><div class="stat-val" style="color:#93C5FD;">Rp 1.08M</div><div class="stat-label">Total Disbursed</div><div class="stat-change up">▲ Semua cair</div></div>
+          <div class="stat-card"><div class="stat-val" style="color:#C4B5FD;">Rp 40K</div><div class="stat-label">Pending Settlement</div><div class="stat-change flat">→ 3 tenant</div></div>
+        </div>
+        <div class="g2">
+          <div class="panel" style="margin-bottom:0;">
+            <div class="panel-header"><div class="panel-title">📊 Platform Revenue 6 Bulan</div></div>
+            <div class="panel-body">
+              <div class="chart-wrap" style="height:100px;">
+                <div class="c-col"><div class="c-bar dim" style="height:50%;"></div><div class="c-lbl">Okt</div></div>
+                <div class="c-col"><div class="c-bar green" style="height:62%;"></div><div class="c-lbl">Nov</div></div>
+                <div class="c-col"><div class="c-bar green" style="height:58%;"></div><div class="c-lbl">Des</div></div>
+                <div class="c-col"><div class="c-bar green" style="height:75%;"></div><div class="c-lbl">Jan</div></div>
+                <div class="c-col"><div class="c-bar bright" style="height:82%;"></div><div class="c-lbl">Feb</div></div>
+                <div class="c-col"><div class="c-bar amber" style="height:100%;"></div><div class="c-lbl">Mar</div></div>
+              </div>
+            </div>
+          </div>
+          <div class="panel" style="margin-bottom:0;">
+            <div class="panel-header"><div class="panel-title">💳 Revenue per Paket</div></div>
+            <div class="panel-body">
+              <div style="display:flex;flex-direction:column;gap:8px;">
+                <div style="display:flex;align-items:center;gap:8px;"><span style="width:60px;font-size:11px;color:var(--text-300);">Business</span><div style="flex:1;height:6px;background:rgba(255,255,255,.06);border-radius:3px;overflow:hidden;"><div style="height:100%;width:60%;background:var(--c-primary-500);border-radius:3px;"></div></div><span style="font-size:11px;font-family:var(--font-mono);color:var(--c-primary-400);white-space:nowrap;width:50px;text-align:right;">Rp 54K</span></div>
+                <div style="display:flex;align-items:center;gap:8px;"><span style="width:60px;font-size:11px;color:var(--text-300);">Pro</span><div style="flex:1;height:6px;background:rgba(255,255,255,.06);border-radius:3px;overflow:hidden;"><div style="height:100%;width:40%;background:var(--c-primary-400);border-radius:3px;"></div></div><span style="font-size:11px;font-family:var(--font-mono);color:var(--c-primary-400);white-space:nowrap;width:50px;text-align:right;">Rp 36K</span></div>
+                <div style="display:flex;align-items:center;gap:8px;"><span style="width:60px;font-size:11px;color:var(--text-300);">Starter</span><div style="flex:1;height:6px;background:rgba(255,255,255,.06);border-radius:3px;overflow:hidden;"><div style="height:100%;width:0%;border-radius:3px;"></div></div><span style="font-size:11px;font-family:var(--font-mono);color:var(--text-400);white-space:nowrap;width:50px;text-align:right;">Rp 0</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="panel" style="margin-top:12px;margin-bottom:0;">
+          <div class="panel-header"><div class="panel-title">📋 Pending Settlement</div></div>
+          <table class="tbl"><thead><tr><th>Tenant</th><th>Periode</th><th>GMV</th><th>Fee Platform</th><th>Net Disbursed</th><th>Status</th><th>Aksi</th></tr></thead>
+          <tbody>
+            <tr><td class="tx-strong">Kantin Pak Budi</td><td class="tx-mono">1–15 Mar</td><td class="tx-strong">Rp 240K</td><td style="color:#FCD34D;">Rp 24K</td><td style="color:var(--c-primary-400);font-weight:700;">Rp 216K</td><td><span class="badge badge-warn">Pending</span></td><td><button class="btn btn-primary btn-sm" onclick="ADM.toast('s','💰','Dibayar','Rp 216K dikirim ke BCA ••••1234')">Bayar</button></td></tr>
+            <tr><td class="tx-strong">Warung Bu Sari</td><td class="tx-mono">1–15 Mar</td><td class="tx-strong">Rp 136K</td><td style="color:#FCD34D;">Rp 13.6K</td><td style="color:var(--c-primary-400);font-weight:700;">Rp 122.4K</td><td><span class="badge badge-warn">Pending</span></td><td><button class="btn btn-primary btn-sm" onclick="ADM.toast('s','💰','Dibayar','Rp 122.4K dikirim ke Mandiri ••••5678')">Bayar</button></td></tr>
+          </tbody></table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ PAGE: SUBSCRIPTIONS ══ -->
+    <div class="subpage" id="page-subscriptions">
+      <div class="scroll-area">
+        <div class="stat-grid sg3">
+          <div class="stat-card"><div class="stat-val" style="color:var(--c-primary-400);">34</div><div class="stat-label">Starter (Gratis)</div></div>
+          <div class="stat-card"><div class="stat-val" style="color:#FCD34D;">10</div><div class="stat-label">Pro (Rp 99K/bln)</div></div>
+          <div class="stat-card"><div class="stat-val" style="color:#C4B5FD;">3</div><div class="stat-label">Business (Rp 299K/bln)</div></div>
+        </div>
+        <div class="panel" style="margin-bottom:0;">
+          <div class="panel-header"><div class="panel-title">💳 Riwayat Pembayaran Paket</div><button class="btn btn-ghost btn-sm" onclick="ADM.toast('i','📤','Export','Riwayat diekspor')">↑ Export</button></div>
+          <table class="tbl"><thead><tr><th>Tenant</th><th>Paket</th><th>Jumlah</th><th>Tanggal</th><th>Metode</th><th>Status</th></tr></thead>
+          <tbody>
+            <tr><td class="tx-strong">Cafetaria Corp X</td><td><span class="badge badge-violet">Business</span></td><td class="tx-strong" style="color:var(--c-primary-400);">Rp 299.000</td><td class="tx-mono">1 Mar 2026</td><td>Auto-debit</td><td><span class="badge badge-ok">Berhasil</span></td></tr>
+            <tr><td class="tx-strong">Kantin Pak Budi</td><td><span class="badge badge-info">Pro</span></td><td class="tx-strong" style="color:var(--c-primary-400);">Rp 99.000</td><td class="tx-mono">1 Mar 2026</td><td>Auto-debit</td><td><span class="badge badge-ok">Berhasil</span></td></tr>
+            <tr><td class="tx-strong">Warung Bu Sari</td><td><span class="badge badge-info">Pro</span></td><td class="tx-strong" style="color:var(--c-primary-400);">Rp 99.000</td><td class="tx-mono">1 Mar 2026</td><td>Auto-debit</td><td><span class="badge badge-ok">Berhasil</span></td></tr>
+            <tr><td class="tx-strong">SMA Negeri 5 Kantin</td><td><span class="badge badge-neu">Starter</span></td><td class="tx-strong">Rp 0</td><td class="tx-mono">—</td><td>—</td><td><span class="badge badge-err">Suspended</span></td></tr>
+          </tbody></table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ PAGE: CONFIG ══ -->
+    <div class="subpage" id="page-config">
+      <div class="scroll-area">
+        <div style="font-size:16px;font-weight:800;color:var(--text-100);margin-bottom:12px;">System Configuration</div>
+        <div class="g2">
+          <div>
+            <div class="panel">
+              <div class="panel-header"><div class="panel-title">⚙️ Platform Settings</div></div>
+              <div class="panel-body" style="display:flex;flex-direction:column;gap:12px;">
+                <div class="fg" style="margin-bottom:0;"><label class="lbl">Platform Fee (%)</label><input class="input" type="number" value="10" id="cfFee"></div>
+                <div class="fg" style="margin-bottom:0;"><label class="lbl">Maks. Tenant Per Universitas</label><input class="input" type="number" value="10"></div>
+                <div class="fg" style="margin-bottom:0;"><label class="lbl">Max File Upload (MB)</label><input class="input" type="number" value="5"></div>
+                <div style="display:flex;align-items:center;justify-content:space-between;"><div><div style="font-size:12px;font-weight:600;color:var(--text-100);">Maintenance Mode</div><div style="font-size:11px;color:var(--text-400);">Semua endpoint dinonaktifkan sementara</div></div><button class="toggle off" onclick="this.classList.toggle('on');this.classList.toggle('off');ADM.toast('w','🔧','Maintenance Mode',this.classList.contains('on')?'Diaktifkan — platform tidak bisa diakses!':'Dinonaktifkan')"></button></div>
+                <div style="display:flex;align-items:center;justify-content:space-between;"><div><div style="font-size:12px;font-weight:600;color:var(--text-100);">New Tenant Registration</div><div style="font-size:11px;color:var(--text-400);">Izinkan pendaftaran tenant baru</div></div><button class="toggle on" onclick="this.classList.toggle('on');this.classList.toggle('off');"></button></div>
+                <button class="btn btn-primary" onclick="ADM.toast('s','💾','Config Disimpan','Platform configuration berhasil diperbarui')">💾 Simpan</button>
+              </div>
+            </div>
+            <div class="panel" style="margin-bottom:0;">
+              <div class="panel-header"><div class="panel-title">📧 Email & Notifikasi</div></div>
+              <div class="panel-body" style="display:flex;flex-direction:column;gap:10px;">
+                <div class="fg" style="margin-bottom:0;"><label class="lbl">SMTP Host</label><input class="input" value="smtp.sendgrid.net"></div>
+                <div class="fg" style="margin-bottom:0;"><label class="lbl">From Email</label><input class="input" value="noreply@kantinkita.id"></div>
+                <div style="display:flex;align-items:center;justify-content:space-between;"><div><div style="font-size:12px;font-weight:600;color:var(--text-100);">Order Confirmation Email</div></div><button class="toggle on" onclick="this.classList.toggle('on');this.classList.toggle('off');"></button></div>
+                <div style="display:flex;align-items:center;justify-content:space-between;"><div><div style="font-size:12px;font-weight:600;color:var(--text-100);">Daily Report Email</div></div><button class="toggle off" onclick="this.classList.toggle('on');this.classList.toggle('off');"></button></div>
+              </div>
+            </div>
+          </div>
+          <div>
+            <div class="panel">
+              <div class="panel-header"><div class="panel-title">💳 Payment Gateway Config</div></div>
+              <div class="panel-body" style="display:flex;flex-direction:column;gap:10px;">
+                <div class="fg" style="margin-bottom:0;"><label class="lbl">Provider</label><select class="input"><option>Midtrans</option><option>Xendit</option></select></div>
+                <div class="fg" style="margin-bottom:0;"><label class="lbl">Merchant ID</label><input class="input" value="G11111111111111"></div>
+                <div class="fg" style="margin-bottom:0;"><label class="lbl">Mode</label><select class="input"><option>Sandbox</option><option>Production</option></select></div>
+                <div class="metric-row" style="padding:0;margin-top:4px;"><span class="metric-name">Status Payment Gateway</span><span class="metric-val" style="color:#FCD34D;">Degraded ⚠️</span></div>
+              </div>
+            </div>
+            <div class="panel" style="margin-bottom:0;">
+              <div class="panel-header"><div class="panel-title">🔐 Security Settings</div></div>
+              <div class="panel-body" style="display:flex;flex-direction:column;gap:10px;">
+                <div style="display:flex;align-items:center;justify-content:space-between;"><div><div style="font-size:12px;font-weight:600;color:var(--text-100);">Two-Factor Auth (Admin)</div></div><button class="toggle on" onclick="this.classList.toggle('on');this.classList.toggle('off');"></button></div>
+                <div style="display:flex;align-items:center;justify-content:space-between;"><div><div style="font-size:12px;font-weight:600;color:var(--text-100);">Rate Limiting</div><div style="font-size:11px;color:var(--text-400);">100 req/menit per IP</div></div><button class="toggle on" onclick="this.classList.toggle('on');this.classList.toggle('off');"></button></div>
+                <div style="display:flex;align-items:center;justify-content:space-between;"><div><div style="font-size:12px;font-weight:600;color:var(--text-100);">DDoS Protection</div></div><button class="toggle on" onclick="this.classList.toggle('on');this.classList.toggle('off');"></button></div>
+                <div class="fg" style="margin-bottom:0;"><label class="lbl">Session Timeout (Menit)</label><input class="input" type="number" value="30"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ PAGE: AUDIT LOG ══ -->
+    <div class="subpage" id="page-audit">
+      <div class="scroll-area">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+          <div style="font-size:16px;font-weight:800;color:var(--text-100);">Audit Log</div>
+          <div style="display:flex;gap:6px;">
+            <span class="badge badge-ok"><span class="badge-dot"></span>Live</span>
+            <input class="input" style="width:180px;" placeholder="Cari log..." oninput="ADM.filterAudit(this.value)">
+            <select class="input" style="width:120px;" onchange="ADM.filterAuditType(this.value)"><option value="all">Semua Tipe</option><option value="danger">DANGER</option><option value="update">UPDATE</option><option value="system">SYSTEM</option><option value="auto">AUTO</option></select>
+            <button class="btn btn-ghost btn-sm" onclick="ADM.toast('s','📤','Export','Audit log diekspor')">↑ Export</button>
+          </div>
+        </div>
+        <div class="panel" style="margin-bottom:0;">
+          <div class="panel-header"><div class="panel-title">📜 Log Aktivitas</div><span style="font-size:11px;color:var(--text-400);" id="auditCount">Menampilkan semua</span></div>
+          <div id="auditLogList"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ PAGE: ERROR MONITOR ══ -->
+    <div class="subpage" id="page-monitor">
+      <div class="scroll-area">
+        <div class="stat-grid sg3">
+          <div class="stat-card"><div class="stat-val up">99.97%</div><div class="stat-label">Uptime 30 Hari</div></div>
+          <div class="stat-card"><div class="stat-val" style="color:#FCA5A5;" id="critCount">0</div><div class="stat-label">Error Kritis</div></div>
+          <div class="stat-card"><div class="stat-val" style="color:#FCD34D;">2</div><div class="stat-label">Warning Aktif</div></div>
+        </div>
+        <div class="g2">
+          <div class="panel" style="margin-bottom:0;">
+            <div class="panel-header"><div class="panel-title">🚨 Active Errors & Warnings</div><button class="btn btn-ghost btn-sm" onclick="ADM.clearErrors()">Resolve All</button></div>
+            <div id="errorList">
+              <div class="error-row error-warn"><div class="error-code">WARN-4012 · payment-gateway</div><div class="error-msg">Payment timeout exceeded 5s</div><div class="error-meta">3 occurrences · last 1hr · <button onclick="ADM.resolveError(this)" style="color:var(--c-primary-400);background:none;border:none;cursor:pointer;font-size:10px;font-weight:700;">Resolve</button></div></div>
+              <div class="error-row error-warn"><div class="error-code">WARN-2034 · database</div><div class="error-msg">Slow query detected &gt;500ms</div><div class="error-meta">1 occurrence · last 2hrs · <button onclick="ADM.resolveError(this)" style="color:var(--c-primary-400);background:none;border:none;cursor:pointer;font-size:10px;font-weight:700;">Resolve</button></div></div>
+            </div>
+          </div>
+          <div class="panel" style="margin-bottom:0;">
+            <div class="panel-header"><div class="panel-title">📊 System Metrics Live</div></div>
+            <div>
+              <div class="metric-row"><span class="metric-name">API Latency</span><span class="metric-val up" id="mLatency">42ms</span></div>
+              <div class="metric-row"><span class="metric-name">DB Pool Usage</span><span class="metric-val" style="color:#FCD34D;" id="mDb">78%</span></div>
+              <div class="metric-row"><span class="metric-name">Memory</span><span class="metric-val up" id="mMem">4.2 / 16 GB</span></div>
+              <div class="metric-row"><span class="metric-name">CPU Usage</span><span class="metric-val up" id="mCpu">23%</span></div>
+              <div class="metric-row"><span class="metric-name">Storage</span><span class="metric-val up">234 / 1024 GB</span></div>
+              <div class="metric-row"><span class="metric-name">Active Connections</span><span class="metric-val up" id="mConn">847</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ PAGE: BACKUP ══ -->
+    <div class="subpage" id="page-backup">
+      <div class="scroll-area">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+          <div style="font-size:16px;font-weight:800;color:var(--text-100);">Backup & Restore</div>
+          <div style="display:flex;gap:6px;">
+            <button class="btn btn-ghost btn-sm" onclick="ADM.scheduleBackup()">📅 Jadwal</button>
+            <button class="btn btn-primary" onclick="ADM.runBackup()">▶ Run Now</button>
+          </div>
+        </div>
+        <div class="g2">
+          <div class="panel" style="margin-bottom:0;">
+            <div class="panel-header"><div class="panel-title">💾 Riwayat Backup</div></div>
+            <div class="backup-grid" id="backupGrid"></div>
+          </div>
+          <div class="panel" style="margin-bottom:0;">
+            <div class="panel-header"><div class="panel-title">⚙️ Backup Configuration</div></div>
+            <div class="panel-body" style="display:flex;flex-direction:column;gap:10px;">
+              <div style="display:flex;align-items:center;justify-content:space-between;"><div><div style="font-size:12px;font-weight:600;color:var(--text-100);">Full Backup Harian</div><div style="font-size:11px;color:var(--text-400);">Setiap hari jam 03:00</div></div><button class="toggle on" onclick="this.classList.toggle('on');this.classList.toggle('off');"></button></div>
+              <div style="display:flex;align-items:center;justify-content:space-between;"><div><div style="font-size:12px;font-weight:600;color:var(--text-100);">Incremental Backup (6 jam)</div></div><button class="toggle on" onclick="this.classList.toggle('on');this.classList.toggle('off');"></button></div>
+              <div class="fg" style="margin-bottom:0;"><label class="lbl">Retensi Backup (hari)</label><input class="input" type="number" value="30"></div>
+              <div class="fg" style="margin-bottom:0;"><label class="lbl">Enkripsi</label><select class="input"><option>AES-256</option><option>AES-128</option></select></div>
+              <div class="metric-row" style="padding:0;"><span class="metric-name" style="font-size:11px;">Storage Backup</span><span class="metric-val up" style="font-size:11px;">12.4 GB / 100 GB</span></div>
+            </div>
+          </div>
+        </div>
+        <div class="panel" style="margin-top:12px;margin-bottom:0;">
+          <div class="panel-header"><div class="panel-title">🔄 Restore Database</div></div>
+          <div class="panel-body">
+            <div style="background:rgba(239,68,68,.06);border:1px solid rgba(239,68,68,.15);border-radius:var(--r-md);padding:12px;margin-bottom:12px;">
+              <div style="font-size:12px;font-weight:700;color:#FCA5A5;margin-bottom:4px;">⚠️ PERHATIAN</div>
+              <div style="font-size:11px;color:var(--text-300);">Restore akan menimpa SEMUA data produksi dengan data backup. Proses ini tidak bisa dibatalkan. Pastikan Anda sudah membuat backup terbaru sebelum melakukan restore.</div>
+            </div>
+            <div style="display:flex;gap:8px;">
+              <select class="input" style="flex:1;"><option>Pilih backup untuk restore...</option><option>✓ FULL — 15 Mar 09:30 (2.4 GB)</option><option>✓ FULL — 14 Mar 09:30 (2.3 GB)</option></select>
+              <button class="btn btn-danger-outline" onclick="ADM.showModal('danger','Restore Database?','Semua data akan ditimpa dengan backup yang dipilih. Ini TIDAK BISA dibatalkan!',()=>ADM.toast('i','🔄','Restore Demo','Restore tidak dilakukan di mode sandbox'))">🔄 Restore</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ PAGE: BROADCAST NOTIF ══ -->
+    <div class="subpage" id="page-notifications">
+      <div class="scroll-area">
+        <div style="font-size:16px;font-weight:800;color:var(--text-100);margin-bottom:12px;">Broadcast Notifikasi</div>
+        <div class="g2">
+          <div class="panel" style="margin-bottom:0;">
+            <div class="panel-header"><div class="panel-title">📢 Kirim Notifikasi</div></div>
+            <div class="panel-body" style="display:flex;flex-direction:column;gap:12px;">
+              <div class="fg" style="margin-bottom:0;"><label class="lbl">Target Penerima</label><select class="input"><option>Semua User</option><option>Semua Customer</option><option>Semua Merchant</option><option>Semua Staff</option><option>Tenant Tertentu</option></select></div>
+              <div class="fg" style="margin-bottom:0;"><label class="lbl">Judul Notifikasi</label><input class="input" id="notifTitle" placeholder="Contoh: Maintenance Terjadwal"></div>
+              <div class="fg" style="margin-bottom:0;"><label class="lbl">Pesan</label><textarea class="input" style="height:80px;padding-top:8px;resize:none;" id="notifMsg" placeholder="Isi pesan notifikasi..."></textarea></div>
+              <div class="fg" style="margin-bottom:0;"><label class="lbl">Jenis</label><div style="display:flex;gap:6px;flex-wrap:wrap;">
+                <button class="notif-type-btn active" onclick="ADM.selectNotifType(this)">📢 Info</button>
+                <button class="notif-type-btn" onclick="ADM.selectNotifType(this)">⚠️ Warning</button>
+                <button class="notif-type-btn" onclick="ADM.selectNotifType(this)">🔥 Promo</button>
+                <button class="notif-type-btn" onclick="ADM.selectNotifType(this)">🔧 Maintenance</button>
+              </div></div>
+              <button class="btn btn-primary btn-block" onclick="ADM.sendBroadcast()">📢 Kirim Sekarang</button>
+            </div>
+          </div>
+          <div class="panel" style="margin-bottom:0;">
+            <div class="panel-header"><div class="panel-title">📋 Riwayat Broadcast</div></div>
+            <table class="tbl"><thead><tr><th>Judul</th><th>Target</th><th>Dikirim</th><th>Status</th></tr></thead>
+            <tbody>
+              <tr><td class="tx-strong">Maintenance 15 Mar</td><td>Semua User</td><td class="tx-mono">15 Mar 08:00</td><td><span class="badge badge-ok">Terkirim (12.847)</span></td></tr>
+              <tr><td class="tx-strong">Fitur Baru: QRIS</td><td>Customer</td><td class="tx-mono">10 Mar 09:00</td><td><span class="badge badge-ok">Terkirim (12.658)</span></td></tr>
+              <tr><td class="tx-strong">Update Kebijakan</td><td>Merchant</td><td class="tx-mono">01 Mar 10:00</td><td><span class="badge badge-ok">Terkirim (47)</span></td></tr>
+            </tbody></table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- main-area -->
+</div><!-- app-wrap -->
+
+<style>
+.notif-type-btn{padding:6px 12px;border:1.5px solid rgba(255,255,255,.1);border-radius:var(--r-full);background:transparent;color:var(--text-300);font-size:11px;font-weight:700;cursor:pointer;transition:all .15s;font-family:inherit}
+.notif-type-btn.active{background:rgba(82,183,136,.15);border-color:rgba(82,183,136,.35);color:var(--c-primary-400)}
+.notif-type-btn:hover:not(.active){background:rgba(255,255,255,.05)}
+</style>
+
+<script>
+// ============================================================ DATA
+const TENANTS = [
+  {id:'T001',name:'Kantin Pak Budi',inst:'Universitas Indonesia',plan:'Pro',tx:387,gmv:'Rp 2.4M',status:'aktif',joined:'Jan 2024'},
+  {id:'T002',name:'Warung Bu Sari',inst:'Universitas Indonesia',plan:'Pro',tx:215,gmv:'Rp 1.1M',status:'aktif',joined:'Mar 2024'},
+  {id:'T003',name:'Cafetaria Corp X',inst:'PT. Teknologi Nusa',plan:'Business',tx:1204,gmv:'Rp 12.4M',status:'aktif',joined:'Nov 2023'},
+  {id:'T004',name:'Kantin FMIPA',inst:'Universitas Gadjah Mada',plan:'Starter',tx:98,gmv:'Rp 490K',status:'aktif',joined:'Jun 2024'},
+  {id:'T005',name:'SMA Negeri 5 Kantin',inst:'SMA Negeri 5 Jakarta',plan:'Starter',tx:0,gmv:'—',status:'suspended',joined:'Aug 2024'},
+  {id:'T006',name:'Koperasi ITB',inst:'Institut Teknologi Bandung',plan:'Pro',tx:45,gmv:'Rp 220K',status:'trial',joined:'14 Mar 2026'},
+];
+const USERS = [
+  {name:'Ahmad Naufal',email:'ahmad@student.ui.ac.id',role:'customer',tenant:'—',joined:'Mar 2026',active:'15 Mar',status:'aktif'},
+  {name:'Budi Santoso (Kasir)',email:'budi@kantinkita.id',role:'staff',tenant:'Kantin Pak Budi',joined:'Jan 2024',active:'15 Mar',status:'aktif'},
+  {name:'Pak Budi (Owner)',email:'pakbudi@merchant.id',role:'merchant',tenant:'Kantin Pak Budi',joined:'Jan 2024',active:'15 Mar',status:'aktif'},
+  {name:'Bu Sari',email:'busari@merchant.id',role:'merchant',tenant:'Warung Bu Sari',joined:'Mar 2024',active:'14 Mar',status:'aktif'},
+  {name:'Super Admin',email:'admin@kantinkita.id',role:'admin',tenant:'—',joined:'Jan 2023',active:'15 Mar',status:'aktif'},
+  {name:'Rina Susanti',email:'rina@student.ui.ac.id',role:'customer',tenant:'—',joined:'Feb 2026',active:'15 Mar',status:'aktif'},
+];
+const AUDIT_LOGS = [
+  {time:'11:24:03',msg:'<strong>admin@kantinkita</strong> suspended tenant <strong>SMA N 5</strong>',tag:'DANGER',tagCls:'at-danger',danger:true},
+  {time:'10:55:17',msg:'<strong>admin@kantinkita</strong> upgraded Cafetaria Corp X → Business plan',tag:'UPDATE',tagCls:'at-update',danger:false},
+  {time:'09:30:44',msg:'System backup completed · 2.4 GB · duration 8m 23s',tag:'SYSTEM',tagCls:'at-system',danger:false},
+  {time:'08:15:22',msg:'<strong>auto</strong> renewed 12 tenant subscriptions (Rp 1.188.000)',tag:'AUTO',tagCls:'at-auto',danger:false},
+  {time:'07:45:11',msg:'<strong>admin@kantinkita</strong> added new tenant Koperasi ITB (Trial)',tag:'UPDATE',tagCls:'at-update',danger:false},
+  {time:'07:00:00',msg:'System startup · All services operational · v2.3.1',tag:'SYSTEM',tagCls:'at-system',danger:false},
+  {time:'06:00:00',msg:'Incremental backup completed · 234 MB',tag:'SYSTEM',tagCls:'at-system',danger:false},
+  {time:'03:00:00',msg:'Full backup started · Scheduled task',tag:'AUTO',tagCls:'at-auto',danger:false},
+];
+const BACKUP_CARDS = [
+  {type:'full',date:'15 Mar 09:30',meta:'2.4 GB · Auto'},
+  {type:'full',date:'14 Mar 09:30',meta:'2.3 GB · Auto'},
+  {type:'incr',date:'15 Mar 06:00',meta:'120 MB · Auto'},
+  {type:'incr',date:'14 Mar 18:00',meta:'98 MB · Auto'},
+  {type:'incr',date:'14 Mar 06:00',meta:'87 MB · Auto'},
+  {type:'full',date:'13 Mar 09:30',meta:'2.2 GB · Auto'},
+  {type:'incr',date:'13 Mar 12:00',meta:'103 MB · Auto'},
+  {type:'incr',date:'13 Mar 00:00',meta:'95 MB · Auto'},
+];
+
+// ============================================================ STATE
+const ST = {
+  tenantFilter:'',tenantStatus:'all',
+  userFilter:'',
+  auditFilter:'',auditType:'all',
+  modalCb:null,
+  backupCards:[...BACKUP_CARDS],
+};
+
+// ============================================================ ADM
+const ADM = {
+  toast(type,icon,title,msg){
+    const el=document.createElement('div');
+    el.className=`toast ${type}`;
+    el.innerHTML=`<div class="t-icon">${icon}</div><div class="t-body"><div class="t-title">${title}</div><div class="t-msg">${msg}</div></div>`;
+    document.getElementById('TC').appendChild(el);
+    setTimeout(()=>el.remove(),3500);
+  },
+  showModal(type,title,body,cb){
+    const map={danger:{icon:'🗑️',cls:'danger',btn:'danger'},warn:{icon:'⚠️',cls:'warn',btn:'confirm'},ok:{icon:'✅',cls:'ok',btn:'confirm'}};
+    const t=map[type]||map.warn;
+    document.getElementById('MI').textContent=t.icon;
+    document.getElementById('MI').className=`modal-icon ${t.cls}`;
+    document.getElementById('MT').textContent=title;
+    document.getElementById('MB').textContent=body;
+    document.getElementById('MCB').className=`modal-btn ${t.btn}`;
+    ST.modalCb=cb;
+    document.getElementById('MO').classList.add('open');
+  },
+  closeModal(){document.getElementById('MO').classList.remove('open')},
+  confirmModal(){this.closeModal();if(ST.modalCb)ST.modalCb()},
+
+  go(page,item){
+    document.querySelectorAll('.subpage').forEach(p=>p.classList.remove('active'));
+    document.querySelectorAll('.sb-item').forEach(i=>i.classList.remove('active'));
+    const el=document.getElementById(`page-${page}`);
+    if(el) el.classList.add('active');
+    if(item&&item.classList) item.classList.add('active');
+    const titles={
+      analytics:'Global Analytics Dashboard',realtime:'Live Dashboard',
+      tenants:'Tenant Management',users:'User Management',roles:'Roles & Permissions',
+      finance:'Platform Finance',subscriptions:'Subscriptions',config:'System Configuration',
+      audit:'Audit Log',monitor:'Error Monitor',backup:'Backup & Restore',
+      notifications:'Broadcast Notifikasi'
+    };
+    document.getElementById('pageTitle').textContent=titles[page]||'Admin';
+    if(page==='tenants') this.renderTenants();
+    if(page==='users') this.renderUsers();
+    if(page==='audit') this.renderAudit();
+    if(page==='backup') this.renderBackup();
+  },
+
+  // ── TENANTS ──
+  renderTenants(f=ST.tenantFilter,s=ST.tenantStatus){
+    const statusMap={aktif:'<span class="badge badge-ok"><span class="badge-dot"></span>Aktif</span>',suspended:'<span class="badge badge-err"><span class="badge-dot"></span>Suspended</span>',trial:'<span class="badge badge-warn"><span class="badge-dot"></span>Trial</span>'};
+    const planMap={Pro:'<span class="badge badge-info">Pro</span>',Business:'<span class="badge badge-violet">Business</span>',Starter:'<span class="badge badge-neu">Starter</span>'};
+    const data=TENANTS.filter(t=>(s==='all'||t.status===s)&&t.name.toLowerCase().includes(f.toLowerCase()));
+    document.getElementById('tenantsTbody').innerHTML=data.map(t=>`
+      <tr>
+        <td class="tx-strong">${t.name}</td>
+        <td style="color:var(--text-300);font-size:11px;">${t.inst}</td>
+        <td>${planMap[t.plan]||t.plan}</td>
+        <td class="tx-strong">${t.tx}</td>
+        <td style="font-family:var(--font-mono);font-size:11px;color:var(--c-primary-400);">${t.gmv}</td>
+        <td>${statusMap[t.status]||t.status}</td>
+        <td class="tx-mono">${t.joined}</td>
+        <td style="display:flex;gap:4px;">
+          <button class="btn btn-ghost btn-sm" onclick="ADM.toast('i','🔍','Detail','Membuka detail tenant ${t.name}')">Detail</button>
+          ${t.status==='suspended'?`<button class="btn btn-primary btn-sm" onclick="ADM.activateTenant('${t.id}',this)">Aktifkan</button>`:''}
+          ${t.status==='aktif'?`<button class="btn btn-danger-outline btn-sm" onclick="ADM.suspendTenant('${t.id}')">Suspend</button>`:''}
+        </td>
+      </tr>`).join('');
+  },
+  filterTenants(v){ST.tenantFilter=v;this.renderTenants();},
+  filterTenantStatus(v){ST.tenantStatus=v;this.renderTenants();},
+  activateTenant(id,btn){
+    this.showModal('ok','Aktifkan Tenant?','Tenant akan dapat menerima order kembali.',()=>{
+      const t=TENANTS.find(x=>x.id===id);if(t){t.status='aktif';}
+      this.renderTenants();
+      this.addAuditEntry('admin@kantinkita mengaktifkan tenant <strong>'+TENANTS.find(x=>x.id===id)?.name+'</strong>','UPDATE','at-update');
+      this.toast('s','✅','Tenant Diaktifkan','');
+    });
+  },
+  suspendTenant(id){
+    const t=TENANTS.find(x=>x.id===id);
+    this.showModal('danger',`Suspend ${t?.name}?`,'Tenant tidak bisa menerima order. Dapat diaktifkan kembali kapan saja.',()=>{
+      if(t) t.status='suspended';
+      this.renderTenants();
+      this.addAuditEntry(`admin@kantinkita suspended tenant <strong>${t?.name}</strong>`,'DANGER','at-danger');
+      this.toast('w','⏸','Tenant Disuspend',t?.name||'');
+    });
+  },
+  showAddTenantModal(){
+    this.showModal('ok','Tambah Tenant Baru?','Form pendaftaran tenant akan dibuka di halaman baru.',()=>this.toast('s','✅','Form Dibuka','Isi data tenant untuk bergabung'));
+  },
+
+  // ── USERS ──
+  renderUsers(f=ST.userFilter){
+    const roleMap={customer:'<span class="badge badge-info">Customer</span>',staff:'<span class="badge badge-warn">Staff</span>',merchant:'<span class="badge badge-ok">Merchant</span>',admin:'<span class="badge badge-violet">Admin</span>'};
+    const data=USERS.filter(u=>u.name.toLowerCase().includes(f.toLowerCase())||u.email.toLowerCase().includes(f.toLowerCase()));
+    document.getElementById('usersTbody').innerHTML=data.map(u=>`
+      <tr>
+        <td class="tx-strong">${u.name}</td>
+        <td style="color:var(--text-400);font-size:11px;font-family:var(--font-mono);">${u.email}</td>
+        <td>${roleMap[u.role]||u.role}</td>
+        <td style="font-size:11px;color:var(--text-300);">${u.tenant}</td>
+        <td class="tx-mono">${u.joined}</td>
+        <td class="tx-mono">${u.active}</td>
+        <td><span class="badge badge-ok"><span class="badge-dot"></span>${u.status}</span></td>
+        <td style="display:flex;gap:4px;">
+          <button class="btn btn-ghost btn-sm" onclick="ADM.toast('i','✏️','Edit','Edit user ${u.name}')">Edit</button>
+          <button class="btn btn-danger-outline btn-sm" onclick="ADM.toast('w','🚫','Suspend','User ${u.name} disuspend')">Suspend</button>
+        </td>
+      </tr>`).join('');
+  },
+  filterUsers(v){ST.userFilter=v;this.renderUsers();},
+  showAddUserModal(){this.showModal('ok','Tambah User Baru?','Form tambah user akan ditampilkan.',()=>this.toast('s','✅','Form Dibuka','Isi data user baru'));},
+
+  // ── AUDIT ──
+  renderAudit(logs=AUDIT_LOGS){
+    const el=document.getElementById('auditLogList');
+    if(!el)return;
+    el.innerHTML=logs.map(l=>`
+      <div class="audit-row${l.danger?' danger-row':''}">
+        <div class="audit-time">${l.time}</div>
+        <div class="audit-msg">${l.msg}</div>
+        <span class="audit-tag ${l.tagCls}">${l.tag}</span>
+      </div>`).join('');
+    document.getElementById('auditCount').textContent=`${logs.length} entri`;
+  },
+  filterAudit(v){ST.auditFilter=v;this.applyAuditFilter();},
+  filterAuditType(v){ST.auditType=v;this.applyAuditFilter();},
+  applyAuditFilter(){
+    const filtered=AUDIT_LOGS.filter(l=>{
+      const matchText=l.msg.replace(/<[^>]+>/g,'').toLowerCase().includes(ST.auditFilter.toLowerCase());
+      const matchType=ST.auditType==='all'||l.tag.toLowerCase()===ST.auditType;
+      return matchText&&matchType;
+    });
+    this.renderAudit(filtered);
+  },
+  addAuditEntry(msg,tag,tagCls){
+    const time=new Date().toLocaleTimeString('id',{hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false});
+    AUDIT_LOGS.unshift({time,msg,tag,tagCls,danger:tagCls==='at-danger'});
+    this.renderAudit();
+  },
+
+  // ── MONITOR ──
+  resolveError(btn){
+    const row=btn.closest('.error-row');
+    row.style.opacity='.4';
+    row.style.pointerEvents='none';
+    this.toast('s','✅','Error Resolved','Issue ditandai sudah diselesaikan');
+  },
+  clearErrors(){
+    document.querySelectorAll('.error-row').forEach(r=>{r.style.opacity='.3';r.style.pointerEvents='none';});
+    document.getElementById('errorBadge').textContent='0';
+    document.getElementById('errorBadge').style.display='none';
+    this.toast('s','✅','Semua Error Resolved','');
+  },
+
+  // ── BACKUP ──
+  renderBackup(){
+    const g=document.getElementById('backupGrid');
+    if(!g)return;
+    g.innerHTML=ST.backupCards.map(c=>`
+      <div class="backup-card">
+        ${c.type==='full'?'<div class="backup-type-full">✓ FULL</div>':'<div class="backup-type-incr">⚡ INCR</div>'}
+        <div class="backup-date">${c.date}</div>
+        <div class="backup-meta">${c.meta}</div>
+      </div>`).join('');
+  },
+  runBackup(){
+    const time=new Date().toLocaleString('id',{month:'short',day:'2-digit',hour:'2-digit',minute:'2-digit'}).replace(',','');
+    ST.backupCards.unshift({type:'full',date:'Now · '+time,meta:'Running... Manual'});
+    this.renderBackup();
+    this.addAuditEntry('admin memulai <strong>manual full backup</strong>','SYSTEM','at-system');
+    this.toast('s','💾','Backup Dimulai','Full backup sedang berjalan...');
+    setTimeout(()=>{if(ST.backupCards[0])ST.backupCards[0].meta='2.4 GB · Manual';this.renderBackup();},3000);
+  },
+  scheduleBackup(){this.toast('i','📅','Jadwal Backup','Form konfigurasi jadwal backup dibuka');},
+
+  // ── NOTIFICATIONS ──
+  selectNotifType(btn){
+    document.querySelectorAll('.notif-type-btn').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+  },
+  sendBroadcast(){
+    const t=document.getElementById('notifTitle').value.trim();
+    const m=document.getElementById('notifMsg').value.trim();
+    if(!t||!m){this.toast('w','⚠️','Field Kosong','Judul dan pesan wajib diisi');return;}
+    this.toast('s','📢','Notifikasi Terkirim!',`"${t}" berhasil dikirim ke 12.847 pengguna`);
+    this.addAuditEntry(`admin mengirim broadcast: <strong>${t}</strong>`, 'UPDATE','at-update');
+  },
+
+  // ── LIVE METRICS SIMULATION ──
+  startLiveMetrics(){
+    setInterval(()=>{
+      const rand=(base,range)=>Math.floor(base+Math.random()*range);
+      const el=(id,v)=>{const e=document.getElementById(id);if(e)e.textContent=v;};
+      el('mLatency',rand(38,15)+'ms');
+      el('mDb',rand(65,20)+'%');
+      el('mCpu',rand(18,15)+'%');
+      el('mConn',rand(800,200).toLocaleString('id'));
+      el('rpmVal',rand(1100,300).toLocaleString('id'));
+      el('liveSessions',rand(1700,300).toLocaleString('id'));
+      el('dbPool',rand(65,20)+'%');
+    },3000);
+  },
+
+  // ── CLOCK ──
+  startClock(){
+    const u=()=>{const t=new Date().toLocaleTimeString('id',{hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false});const e=document.getElementById('clock');if(e)e.textContent=t;};
+    u();setInterval(u,1000);
+  },
+
+  // ── LIVE DASHBOARD REFRESH ──
+  refreshLive(){
+    this.toast('s','🔄','Refreshed','Metrics diperbarui');
+  }
+};
+
+// ── INIT ──
+ADM.startClock();
+ADM.startLiveMetrics();
+ADM.renderTenants();
+ADM.renderAudit();
+ADM.renderBackup();
+</script>
+</body>
+</html>

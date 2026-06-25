@@ -1,6 +1,7 @@
 <?php
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class Order extends BaseModel
@@ -16,6 +17,7 @@ class Order extends BaseModel
         'refunded_at'  => 'datetime',
     ];
 
+    const STATUS_CART       = 'cart';
     const STATUS_PENDING    = 'pending_payment';
     const STATUS_PAID       = 'paid';
     const STATUS_PROCESSING = 'processing';
@@ -25,9 +27,14 @@ class Order extends BaseModel
     const STATUS_REFUNDED   = 'refunded';
 
     const VALID_TRANSITIONS = [
-        self::STATUS_PENDING    => [self::STATUS_EXPIRED, self::STATUS_CANCELLED],
+        self::STATUS_CART       => [self::STATUS_PENDING],
+        self::STATUS_PENDING    => [self::STATUS_PAID, self::STATUS_EXPIRED, self::STATUS_CANCELLED],
         self::STATUS_PAID       => [self::STATUS_PROCESSING, self::STATUS_REFUNDED],
         self::STATUS_PROCESSING => [self::STATUS_COMPLETED],
+        self::STATUS_COMPLETED  => [],
+        self::STATUS_EXPIRED    => [],
+        self::STATUS_CANCELLED  => [],
+        self::STATUS_REFUNDED   => [],
     ];
 
     public function user()    { return $this->belongsTo(User::class); }
@@ -40,9 +47,9 @@ class Order extends BaseModel
         return in_array($newStatus, self::VALID_TRANSITIONS[$this->status] ?? []);
     }
 
-    public function scopeByStatus($query, string $status) { return $query->where('status', $status); }
+    public function scopeByStatus(Builder $query, string $status) { return $query->where('status', $status); }
 
-    public function scopeExpired($query)
+    public function scopeExpired(Builder $query)
     {
         return $query->where('status', self::STATUS_PENDING)->where('expires_at', '<', now());
     }

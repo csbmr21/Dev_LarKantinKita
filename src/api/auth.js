@@ -21,7 +21,10 @@ export const authApi = {
   },
 
   changePassword: (data) =>
-    api.put('/api/v1/auth/password', data),
+    api.put('/api/v1/auth/change-password', data),
+
+  setupProfile: (data) =>
+    api.put('/api/v1/auth/setup-profile', data),
 
   verifyGoogleOtp: (data) => api.post('/api/v1/auth/google/verify-otp', data),
   forgotPassword: (email) => api.post('/api/v1/auth/forgot-password', { email }),

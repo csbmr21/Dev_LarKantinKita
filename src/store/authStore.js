@@ -59,10 +59,19 @@ export const useAuthStore = create(
       setToken: (token) =>
         set({ token }),
 
-      getRole: () => get().user?.role?.slug ?? get().user?.role ?? null,
+      /**
+       * Canonical role slug — prefer role.slug (relationship), fallback to role string.
+       * Matches backend User::getRoleSlug() logic.
+       */
+      getRole: () => {
+        const role = get().user?.role;
+        if (typeof role === 'object' && role?.slug) return role.slug;
+        if (typeof role === 'string') return role;
+        return null;
+      },
 
       isRole: (...roles) => {
-        const currentRole = get().user?.role?.slug ?? get().user?.role;
+        const currentRole = get().getRole();
         return roles.includes(currentRole);
       },
 

@@ -1,0 +1,1220 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>KantinKita — Part 2: Kasir / POS</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --c-primary-900:#081C0F;--c-primary-800:#1B4332;--c-primary-700:#2D6A4F;
+  --c-primary-600:#40916C;--c-primary-500:#52B788;--c-primary-400:#74C69D;
+  --c-primary-200:#B7E4C7;--c-primary-100:#D8F3DC;--c-primary-50:#F0FBF3;
+  --c-amber-600:#D97706;--c-amber-500:#F59E0B;--c-amber-400:#FBBF24;--c-amber-100:#FEF3C7;
+  --c-red-600:#DC2626;--c-red-500:#EF4444;--c-red-200:#FECACA;--c-red-100:#FEE2E2;
+  --c-emerald-600:#059669;--c-emerald-500:#10B981;--c-emerald-100:#D1FAE5;
+  --c-blue-500:#3B82F6;--c-blue-100:#DBEAFE;
+  --c-neutral-950:#030712;--c-neutral-900:#0F1117;--c-neutral-850:#141920;
+  --c-neutral-800:#1C2333;--c-neutral-700:#252E3F;--c-neutral-600:#374151;
+  --c-neutral-500:#6B7280;--c-neutral-400:#9CA3AF;--c-neutral-300:#D1D5DB;
+  --c-neutral-200:#E5E7EB;--c-neutral-100:#F3F4F6;--c-neutral-50:#F9FAFB;
+  --c-white:#FFFFFF;
+  --color-bg:var(--c-neutral-50);--color-surface:var(--c-white);
+  --color-border:var(--c-neutral-200);--color-border-light:var(--c-neutral-100);
+  --color-text-primary:#111827;--color-text-secondary:var(--c-neutral-500);
+  --color-text-muted:var(--c-neutral-400);
+  --font-sans:'Plus Jakarta Sans',system-ui,sans-serif;
+  --font-mono:'JetBrains Mono',monospace;
+  --text-xs:11px;--text-sm:13px;--text-base:15px;--text-lg:18px;--text-xl:20px;
+  --fw-semibold:600;--fw-bold:700;--fw-extrabold:800;
+  --lh-tight:1.2;--lh-snug:1.4;--lh-normal:1.6;
+  --sp-1:4px;--sp-2:8px;--sp-3:12px;--sp-4:16px;--sp-5:20px;--sp-6:24px;--sp-8:32px;
+  --r-sm:6px;--r-md:10px;--r-lg:14px;--r-xl:20px;--r-full:9999px;
+  --shadow-xs:0 1px 2px rgba(0,0,0,0.04);
+  --shadow-sm:0 1px 4px rgba(0,0,0,0.06);
+  --shadow-md:0 4px 12px rgba(0,0,0,0.08);
+  --shadow-lg:0 12px 32px rgba(0,0,0,0.12);
+  --shadow-xl:0 24px 64px rgba(0,0,0,0.16);
+  --sidebar-width:228px;--topbar-height:56px;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{-webkit-font-smoothing:antialiased}
+body{font-family:var(--font-sans);font-size:var(--text-base);line-height:var(--lh-normal);background:var(--c-neutral-50);color:var(--color-text-primary);height:100vh;overflow:hidden}
+button,input,select,textarea{font-family:inherit}
+
+/* ── SHARED COMPONENTS ── */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;height:40px;padding:0 20px;border-radius:var(--r-md);font-size:var(--text-sm);font-weight:var(--fw-bold);cursor:pointer;border:1.5px solid transparent;transition:all .18s;white-space:nowrap;line-height:1;text-decoration:none}
+.btn:disabled{opacity:0.4;cursor:not-allowed;pointer-events:none}
+.btn-primary{background:var(--c-primary-700);color:white;border-color:var(--c-primary-700)}
+.btn-primary:hover{background:var(--c-primary-800);transform:translateY(-1px);box-shadow:0 4px 16px rgba(45,106,79,0.35)}
+.btn-secondary{background:transparent;color:var(--c-primary-600);border-color:var(--c-primary-600)}
+.btn-secondary:hover{background:var(--c-primary-100)}
+.btn-danger{background:var(--c-red-500);color:white;border-color:var(--c-red-500)}
+.btn-danger:hover{background:var(--c-red-600)}
+.btn-ghost-dark{background:transparent;color:rgba(255,255,255,0.6);border-color:rgba(255,255,255,0.15)}
+.btn-ghost-dark:hover{background:rgba(255,255,255,0.07);color:rgba(255,255,255,0.9)}
+.btn-sm{height:32px;padding:0 12px;font-size:var(--text-xs);border-radius:var(--r-sm)}
+.btn-lg{height:48px;font-size:var(--text-base)}
+.btn-block{width:100%}
+.badge{display:inline-flex;align-items:center;gap:5px;padding:3px 8px;border-radius:var(--r-full);font-size:11px;font-weight:700}
+.badge-dot{width:5px;height:5px;border-radius:50%;background:currentColor}
+.badge-success{background:var(--c-emerald-100);color:#065F46}
+.badge-warning{background:var(--c-amber-100);color:#92400E}
+.badge-error{background:var(--c-red-100);color:#991B1B}
+.badge-info{background:var(--c-blue-100);color:#1E40AF}
+.badge-neutral{background:var(--c-neutral-100);color:var(--c-neutral-600)}
+.input{width:100%;height:40px;padding:0 12px;background:white;border:1.5px solid var(--color-border);border-radius:var(--r-md);font-size:var(--text-sm);color:var(--color-text-primary);outline:none;transition:border-color .15s,box-shadow .15s}
+.input:focus{border-color:var(--c-primary-600);box-shadow:0 0 0 3px rgba(64,145,108,0.15)}
+.input::placeholder{color:var(--color-text-muted)}
+.input-sm{height:36px;font-size:var(--text-xs)}
+.form-label{font-size:12px;font-weight:700;color:var(--color-text-secondary);margin-bottom:6px;display:block}
+.form-group{margin-bottom:14px}
+.toggle{width:40px;height:22px;border-radius:var(--r-full);cursor:pointer;transition:background .2s;position:relative;flex-shrink:0;border:none;outline:none}
+.toggle::after{content:'';position:absolute;width:16px;height:16px;border-radius:50%;background:white;top:3px;box-shadow:0 1px 3px rgba(0,0,0,0.2);transition:left .2s}
+.toggle.on{background:var(--c-emerald-500)}.toggle.on::after{left:calc(100% - 19px)}
+.toggle.off{background:var(--c-neutral-300)}.toggle.off::after{left:3px}
+.qty-stepper{display:inline-flex;align-items:center;background:var(--c-neutral-50);border:1.5px solid var(--color-border);border-radius:var(--r-md);overflow:hidden;height:34px}
+.qty-btn{width:34px;height:100%;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:700;color:var(--c-primary-700);background:transparent;border:none;cursor:pointer;transition:background .15s}
+.qty-btn:hover{background:var(--c-primary-100)}
+.qty-val{width:34px;text-align:center;font-size:13px;font-weight:700;border-left:1.5px solid var(--color-border);border-right:1.5px solid var(--color-border);background:white;height:100%;display:flex;align-items:center;justify-content:center}
+/* Panels */
+.panel{background:white;border:1px solid var(--color-border);border-radius:var(--r-lg);overflow:hidden;box-shadow:var(--shadow-xs);margin-bottom:16px}
+.panel-header{padding:14px 20px;border-bottom:1px solid var(--color-border-light);display:flex;align-items:center;justify-content:space-between}
+.panel-title{font-size:14px;font-weight:800;color:var(--color-text-primary)}
+.data-table{width:100%;border-collapse:collapse}
+.data-table th{text-align:left;padding:10px 16px;font-size:11px;font-weight:700;color:var(--color-text-muted);text-transform:uppercase;letter-spacing:0.8px;background:var(--c-neutral-50);border-bottom:1px solid var(--color-border);white-space:nowrap}
+.data-table td{padding:12px 16px;font-size:13px;color:var(--color-text-primary);border-bottom:1px solid var(--color-border-light);vertical-align:middle}
+.data-table tr:last-child td{border-bottom:none}
+.data-table tbody tr{transition:background .12s;cursor:default}
+.data-table tbody tr:hover td{background:var(--c-neutral-50)}
+/* Stat cards */
+.stat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px}
+.stat-grid-3{grid-template-columns:repeat(3,1fr)}
+.stat-card{background:white;border:1px solid var(--color-border);border-radius:var(--r-lg);padding:16px;box-shadow:var(--shadow-xs)}
+.stat-icon{width:36px;height:36px;border-radius:var(--r-md);display:flex;align-items:center;justify-content:center;font-size:17px;margin-bottom:12px}
+.stat-val{font-size:22px;font-weight:800;color:var(--color-text-primary);letter-spacing:-0.5px;line-height:1;margin-bottom:4px}
+.stat-label{font-size:11px;color:var(--color-text-secondary);font-weight:500}
+.stat-change{font-size:11px;font-weight:600;margin-top:8px;display:flex;align-items:center;gap:3px}
+.up{color:var(--c-emerald-500)}.down{color:var(--c-red-500)}.neutral{color:var(--c-amber-500)}
+/* Toast */
+.toast-container{position:fixed;bottom:20px;right:20px;z-index:9999;display:flex;flex-direction:column;gap:8px;pointer-events:none}
+.toast{display:flex;align-items:flex-start;gap:12px;padding:12px 16px;background:white;border:1px solid var(--color-border);border-radius:var(--r-lg);box-shadow:var(--shadow-lg);max-width:320px;animation:tin .25s ease;pointer-events:all}
+.t-icon{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0}
+.t-body{flex:1}
+.t-title{font-size:13px;font-weight:700;color:var(--color-text-primary);margin-bottom:2px}
+.t-msg{font-size:11px;color:var(--color-text-secondary)}
+.toast.s{border-left:3px solid var(--c-emerald-500)}.toast.s .t-icon{background:var(--c-emerald-100);color:#065F46}
+.toast.e{border-left:3px solid var(--c-red-500)}.toast.e .t-icon{background:var(--c-red-100);color:#991B1B}
+.toast.w{border-left:3px solid var(--c-amber-500)}.toast.w .t-icon{background:var(--c-amber-100);color:#92400E}
+.toast.i{border-left:3px solid var(--c-blue-500)}.toast.i .t-icon{background:var(--c-blue-100);color:#1E40AF}
+@keyframes tin{from{opacity:0;transform:translateX(20px)}to{opacity:1;transform:translateX(0)}}
+/* Modal */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.5);backdrop-filter:blur(4px);z-index:8000;display:flex;align-items:center;justify-content:center;padding:20px;opacity:0;pointer-events:none;transition:opacity .2s}
+.modal-overlay.open{opacity:1;pointer-events:all}
+.modal-box{background:white;border-radius:var(--r-xl);padding:24px;width:100%;max-width:440px;box-shadow:var(--shadow-xl);transform:scale(0.95);transition:transform .2s}
+.modal-overlay.open .modal-box{transform:scale(1)}
+.modal-icon{width:52px;height:52px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:24px;margin-bottom:16px}
+.modal-icon.success{background:var(--c-emerald-100)}.modal-icon.danger{background:var(--c-red-100)}.modal-icon.warning{background:var(--c-amber-100)}
+.modal-title{font-size:20px;font-weight:800;margin-bottom:8px}
+.modal-body{font-size:14px;color:var(--color-text-secondary);line-height:1.6;margin-bottom:20px}
+.modal-actions{display:flex;gap:12px}
+.modal-btn{flex:1;height:40px;border-radius:var(--r-md);font-size:14px;font-weight:700;cursor:pointer;border:none;transition:all .15s}
+.modal-btn.cancel{background:var(--c-neutral-100);color:var(--color-text-secondary);border:1.5px solid var(--color-border)}
+.modal-btn.confirm{background:var(--c-primary-700);color:white}
+.modal-btn.danger{background:var(--c-red-500);color:white}
+.modal-btn.cancel:hover{background:var(--c-neutral-200)}
+.modal-btn.confirm:hover{background:var(--c-primary-800)}
+.modal-btn.danger:hover{background:var(--c-red-600)}
+
+/* ── TOPBAR / ROLE BAR ── */
+.role-bar{background:#040810;border-bottom:1px solid rgba(255,255,255,0.07);padding:0 20px;display:flex;align-items:center;height:44px;gap:12px;flex-shrink:0;z-index:1000}
+.role-logo-mark{width:26px;height:26px;background:var(--c-primary-700);border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;color:white}
+.role-logo-text{font-size:14px;font-weight:800;color:white}
+.role-logo-ver{background:rgba(82,183,136,0.15);color:var(--c-primary-400);font-size:9px;font-weight:700;padding:2px 5px;border-radius:3px}
+.role-tab{display:flex;align-items:center;gap:5px;padding:5px 12px;border-radius:var(--r-full);font-size:11px;font-weight:700;cursor:pointer;border:1.5px solid transparent;transition:all .2s;color:rgba(255,255,255,0.4);background:transparent;white-space:nowrap}
+.role-tab:hover{color:rgba(255,255,255,0.75);background:rgba(255,255,255,0.05)}
+.role-tab.active{background:rgba(45,106,79,0.2);border-color:rgba(45,106,79,0.4);color:var(--c-primary-400)}
+.sandbox-badge{background:rgba(245,158,11,0.12);border:1px solid rgba(245,158,11,0.25);color:var(--c-amber-400);font-size:9px;font-weight:700;padding:2px 6px;border-radius:3px}
+.part-badge{background:rgba(59,130,246,0.12);border:1px solid rgba(59,130,246,0.25);color:#93C5FD;font-size:9px;font-weight:700;padding:2px 6px;border-radius:3px}
+
+/* ── KASIR LAYOUT ── */
+.kasir-wrap{display:flex;height:calc(100vh - 44px);overflow:hidden}
+.sidebar{width:var(--sidebar-width);background:var(--c-primary-900);display:flex;flex-direction:column;flex-shrink:0}
+.sidebar-header{height:var(--topbar-height);display:flex;align-items:center;gap:10px;padding:0 16px;border-bottom:1px solid rgba(255,255,255,0.07);flex-shrink:0}
+.sidebar-logo{width:30px;height:30px;background:var(--c-primary-500);border-radius:var(--r-sm);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;color:white}
+.sidebar-brand{font-size:15px;font-weight:800;color:white}
+.sidebar-tenant{font-size:11px;color:rgba(255,255,255,0.35);margin-top:1px}
+.sidebar-nav{flex:1;padding:8px;overflow-y:auto}
+.sidebar-section{padding:10px 8px 3px;font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,0.2)}
+.sidebar-item{display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:var(--r-md);font-size:13px;font-weight:600;color:rgba(255,255,255,0.45);cursor:pointer;transition:all .15s;margin-bottom:2px}
+.sidebar-item:hover{background:rgba(255,255,255,0.07);color:rgba(255,255,255,0.85)}
+.sidebar-item.active{background:rgba(82,183,136,0.15);color:var(--c-primary-400)}
+.sidebar-item-icon{font-size:15px;flex-shrink:0}
+.sidebar-chip{margin-left:auto;background:var(--c-amber-500);color:#1A1200;font-size:10px;font-weight:800;padding:2px 6px;border-radius:var(--r-full)}
+.sidebar-footer{padding:12px 16px;border-top:1px solid rgba(255,255,255,0.07);display:flex;align-items:center;gap:10px}
+.sidebar-avatar{width:30px;height:30px;border-radius:50%;background:rgba(255,255,255,0.12);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:white}
+.sidebar-user-name{font-size:13px;font-weight:600;color:rgba(255,255,255,0.8)}
+.sidebar-user-role{font-size:10px;color:rgba(255,255,255,0.35)}
+.main-area{flex:1;display:flex;flex-direction:column;overflow:hidden}
+.topbar{height:var(--topbar-height);background:white;border-bottom:1px solid var(--color-border);display:flex;align-items:center;justify-content:space-between;padding:0 20px;flex-shrink:0}
+.topbar-title{font-size:18px;font-weight:800;color:var(--color-text-primary);letter-spacing:-0.3px}
+.topbar-sub{font-size:11px;color:var(--color-text-muted);margin-top:1px}
+.topbar-right{display:flex;align-items:center;gap:8px}
+/* Sub-pages */
+.subpage{display:none;flex:1;overflow:hidden;flex-direction:column}
+.subpage.active{display:flex}
+.content-scroll{flex:1;overflow-y:auto;padding:20px}
+
+/* ── POS LAYOUT ── */
+.pos-layout{display:grid;grid-template-columns:1fr 340px;flex:1;overflow:hidden}
+.pos-left{display:flex;flex-direction:column;overflow:hidden;border-right:1px solid var(--color-border)}
+.pos-toolbar{padding:10px 12px;background:white;border-bottom:1px solid var(--color-border);display:flex;gap:8px;flex-shrink:0}
+.pos-cats{display:flex;gap:6px;padding:8px 12px;background:white;border-bottom:1px solid var(--color-border-light);overflow-x:auto;flex-shrink:0}
+.pos-cats::-webkit-scrollbar{display:none}
+.pos-cat{padding:6px 12px;border-radius:var(--r-full);font-size:12px;font-weight:700;border:1.5px solid var(--color-border);background:white;cursor:pointer;white-space:nowrap;transition:all .15s;color:var(--color-text-secondary)}
+.pos-cat.active{background:var(--c-primary-700);border-color:var(--c-primary-700);color:white}
+.pos-grid{flex:1;overflow-y:auto;padding:10px;display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:8px;align-content:start}
+.pos-item{background:white;border:1.5px solid var(--color-border);border-radius:var(--r-lg);padding:10px;cursor:pointer;transition:all .2s;text-align:center;position:relative}
+.pos-item:hover{border-color:var(--c-primary-400);background:var(--c-primary-50);transform:translateY(-1px);box-shadow:var(--shadow-sm)}
+.pos-item:active{transform:scale(0.96)}
+.pos-item.out{opacity:0.35;cursor:not-allowed;pointer-events:none}
+.pos-item-emoji{font-size:28px;display:block;margin-bottom:6px}
+.pos-item-name{font-size:11px;font-weight:700;color:var(--color-text-primary);margin-bottom:3px;line-height:1.3}
+.pos-item-price{font-size:12px;font-weight:800;color:var(--c-primary-700)}
+.pos-item-count{position:absolute;top:6px;right:6px;background:var(--c-primary-700);color:white;width:18px;height:18px;border-radius:50%;font-size:10px;font-weight:800;display:flex;align-items:center;justify-content:center}
+/* POS right panel */
+.pos-right{display:flex;flex-direction:column;background:white;overflow:hidden}
+.pos-order-header{padding:12px 14px;border-bottom:1px solid var(--color-border-light);display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.pos-order-title{font-size:14px;font-weight:800}
+.pos-order-id{font-family:var(--font-mono);font-size:11px;color:var(--color-text-muted);margin-top:2px}
+.pos-items-wrap{flex:1;overflow-y:auto}
+.pos-order-item{display:flex;align-items:center;gap:8px;padding:10px 14px;border-bottom:1px solid var(--color-border-light)}
+.pos-oi-emoji{font-size:20px;flex-shrink:0}
+.pos-oi-info{flex:1}
+.pos-oi-name{font-size:12px;font-weight:700;color:var(--color-text-primary)}
+.pos-oi-sub{font-size:11px;color:var(--color-text-muted)}
+.pos-oi-price{font-size:13px;font-weight:800;color:var(--c-primary-700);margin-right:6px;white-space:nowrap}
+.pos-oi-del{width:22px;height:22px;border-radius:50%;background:var(--c-red-100);color:var(--c-red-500);border:none;cursor:pointer;font-size:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.pos-empty{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;color:var(--color-text-muted);font-size:12px;padding:20px;text-align:center}
+.pos-empty-icon{font-size:36px;opacity:0.3}
+.pos-footer{padding:12px 14px;border-top:1px solid var(--color-border);background:var(--c-neutral-50);flex-shrink:0}
+.pos-total-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+.pos-total-label{font-size:13px;color:var(--color-text-secondary)}
+.pos-total-val{font-size:22px;font-weight:800;color:var(--c-primary-700);letter-spacing:-0.5px}
+.pos-pay-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:10px}
+.pos-pay-btn{height:34px;border-radius:var(--r-sm);font-size:12px;font-weight:700;cursor:pointer;border:1.5px solid var(--color-border);background:white;color:var(--color-text-secondary);transition:all .15s;display:flex;align-items:center;justify-content:center;gap:4px;font-family:inherit}
+.pos-pay-btn.sel{border-color:var(--c-primary-600);background:var(--c-primary-50);color:var(--c-primary-700)}
+.pos-charge-btn{width:100%;height:44px;background:var(--c-primary-700);color:white;border:none;border-radius:var(--r-md);font-size:15px;font-weight:800;cursor:pointer;transition:background .15s;font-family:inherit}
+.pos-charge-btn:hover{background:var(--c-primary-800)}
+.pos-charge-btn:disabled{opacity:0.4;cursor:not-allowed}
+/* POS success overlay */
+.pos-success{position:absolute;inset:0;background:white;z-index:50;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;opacity:0;pointer-events:none;transition:opacity .3s}
+.pos-success.show{opacity:1;pointer-events:all}
+.pos-success-icon{font-size:60px}
+.pos-success-title{font-size:22px;font-weight:800;color:var(--c-primary-700)}
+.pos-success-amount{font-size:32px;font-weight:800;color:var(--color-text-primary);letter-spacing:-1px}
+.pos-receipt{width:260px;background:var(--c-neutral-50);border-radius:var(--r-lg);padding:14px;margin-top:4px}
+.pos-receipt-row{display:flex;justify-content:space-between;font-size:12px;padding:4px 0;border-bottom:1px solid var(--color-border-light)}
+.pos-receipt-row:last-child{border-bottom:none}
+.pos-receipt-total{display:flex;justify-content:space-between;font-size:15px;font-weight:800;padding-top:8px;color:var(--c-primary-700)}
+
+/* ── ORDERS PAGE ── */
+.order-status-bar{display:flex;gap:4px;padding:12px 20px;background:white;border-bottom:1px solid var(--color-border);flex-shrink:0}
+.order-filter-tab{padding:6px 12px;border-radius:var(--r-full);font-size:12px;font-weight:700;cursor:pointer;border:1.5px solid var(--color-border);background:white;color:var(--color-text-secondary);transition:all .15s;white-space:nowrap}
+.order-filter-tab.active{background:var(--c-primary-700);border-color:var(--c-primary-700);color:white}
+.order-kanban{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;padding:16px;height:100%;overflow-y:auto;align-content:start}
+.kanban-col{background:var(--c-neutral-50);border-radius:var(--r-lg);padding:10px;min-height:200px}
+.kanban-col-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.kanban-col-title{font-size:12px;font-weight:700;color:var(--color-text-secondary);text-transform:uppercase;letter-spacing:0.8px}
+.kanban-col-count{width:20px;height:20px;border-radius:50%;font-size:10px;font-weight:800;display:flex;align-items:center;justify-content:center}
+.kanban-card{background:white;border:1px solid var(--color-border);border-radius:var(--r-md);padding:10px;margin-bottom:8px;box-shadow:var(--shadow-xs);cursor:pointer;transition:all .15s}
+.kanban-card:hover{box-shadow:var(--shadow-sm);transform:translateY(-1px)}
+.kanban-card-id{font-family:var(--font-mono);font-size:10px;color:var(--color-text-muted);margin-bottom:4px}
+.kanban-card-name{font-size:12px;font-weight:700;margin-bottom:3px}
+.kanban-card-items{font-size:11px;color:var(--color-text-secondary);margin-bottom:6px;line-height:1.4}
+.kanban-card-footer{display:flex;align-items:center;justify-content:space-between}
+.kanban-card-price{font-size:13px;font-weight:800;color:var(--c-primary-700)}
+.kanban-card-time{font-size:10px;color:var(--color-text-muted)}
+.kanban-card-actions{margin-top:8px;display:flex;gap:4px}
+.kanban-act{flex:1;height:28px;border:1.5px solid var(--color-border);border-radius:var(--r-sm);font-size:11px;font-weight:700;cursor:pointer;background:white;transition:all .15s;font-family:inherit}
+.kanban-act.primary{background:var(--c-primary-700);color:white;border-color:var(--c-primary-700)}
+.kanban-act.primary:hover{background:var(--c-primary-800)}
+.kanban-act.danger{background:var(--c-red-100);color:var(--c-red-500);border-color:var(--c-red-200)}
+
+/* ── REPORTS PAGE ── */
+.chart-bar-group{display:flex;align-items:flex-end;gap:5px;height:100px}
+.chart-bar-col{display:flex;flex-direction:column;align-items:center;gap:4px;flex:1}
+.chart-bar{width:100%;background:var(--c-primary-500);border-radius:3px 3px 0 0;transition:opacity .15s;cursor:pointer}
+.chart-bar:hover{opacity:0.75}
+.chart-bar.a{background:var(--c-amber-400)}
+.chart-bar.l{background:var(--c-primary-200)}
+.chart-bar-label{font-size:10px;color:var(--color-text-muted);font-family:var(--font-mono);white-space:nowrap}
+.rank-item{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--color-border-light)}
+.rank-item:last-child{border-bottom:none}
+.rank-badge{width:22px;height:22px;border-radius:50%;background:var(--c-primary-100);color:var(--c-primary-800);font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.rank-badge.gold{background:var(--c-amber-100);color:var(--c-amber-600)}
+.rank-info{flex:1}
+.rank-name{font-size:13px;font-weight:600;margin-bottom:3px}
+.rank-bar-wrap{height:4px;background:var(--c-neutral-100);border-radius:2px;overflow:hidden}
+.rank-fill{height:100%;background:var(--c-primary-500);border-radius:2px;transition:width .5s ease}
+.rank-count{font-size:13px;font-weight:700;color:var(--color-text-secondary);white-space:nowrap}
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px}
+
+/* ── MENU MANAGEMENT ── */
+.menu-form-panel{background:white;border:1px solid var(--color-border);border-radius:var(--r-lg);padding:20px;margin-bottom:16px;box-shadow:var(--shadow-xs)}
+.menu-form-title{font-size:15px;font-weight:800;margin-bottom:16px;padding-bottom:12px;border-bottom:1px solid var(--color-border-light)}
+.thumb-upload{width:80px;height:80px;background:var(--c-neutral-100);border:2px dashed var(--color-border);border-radius:var(--r-lg);display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;transition:all .15s;font-size:24px}
+.thumb-upload:hover{border-color:var(--c-primary-400);background:var(--c-primary-50)}
+
+/* ── STAFF PAGE ── */
+.staff-card{background:white;border:1px solid var(--color-border);border-radius:var(--r-lg);padding:16px;display:flex;align-items:center;gap:12px;box-shadow:var(--shadow-xs);margin-bottom:8px}
+.staff-avatar{width:40px;height:40px;border-radius:50%;background:var(--c-primary-100);display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;color:var(--c-primary-700);flex-shrink:0}
+.staff-info{flex:1}
+.staff-name{font-size:14px;font-weight:700}
+.staff-role{font-size:11px;color:var(--color-text-muted)}
+.staff-meta{font-size:11px;color:var(--color-text-secondary);margin-top:2px}
+
+/* ── SETTINGS PAGE ── */
+.settings-section{background:white;border:1px solid var(--color-border);border-radius:var(--r-lg);overflow:hidden;box-shadow:var(--shadow-xs);margin-bottom:16px}
+.settings-section-title{padding:14px 20px;font-size:13px;font-weight:800;background:var(--c-neutral-50);border-bottom:1px solid var(--color-border-light)}
+.settings-row{display:flex;align-items:center;gap:12px;padding:14px 20px;border-bottom:1px solid var(--color-border-light)}
+.settings-row:last-child{border-bottom:none}
+.settings-icon{width:36px;height:36px;border-radius:var(--r-md);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0}
+.settings-label{flex:1}
+.settings-label-title{font-size:13px;font-weight:600;color:var(--color-text-primary)}
+.settings-label-sub{font-size:11px;color:var(--color-text-muted);margin-top:1px}
+</style>
+</head>
+<body>
+<div class="toast-container" id="TC"></div>
+<div class="modal-overlay" id="MO">
+  <div class="modal-box">
+    <div class="modal-icon" id="MI">⚠️</div>
+    <div class="modal-title" id="MT">Konfirmasi</div>
+    <div class="modal-body" id="MB">Lanjutkan?</div>
+    <div class="modal-actions">
+      <button class="modal-btn cancel" onclick="POS.closeModal()">Batal</button>
+      <button class="modal-btn confirm" id="MCB" onclick="POS.confirmModal()">Ya</button>
+    </div>
+  </div>
+</div>
+
+<!-- ROLE BAR -->
+<div class="role-bar">
+  <div style="display:flex;align-items:center;gap:6px;margin-right:10px;">
+    <div class="role-logo-mark">KK</div>
+    <div class="role-logo-text">KantinKita</div>
+    <div class="role-logo-ver">v2.0</div>
+  </div>
+  <span style="color:rgba(255,255,255,0.2);font-size:16px;">|</span>
+  <span style="font-size:10px;font-weight:600;color:rgba(255,255,255,0.3);letter-spacing:1px;text-transform:uppercase;">Mode:</span>
+  <div style="display:flex;gap:3px;">
+    <button class="role-tab" onclick="window.open('kk-part1-customer.html')">📱 Customer</button>
+    <button class="role-tab active">🧾 Kasir / POS</button>
+    <button class="role-tab" onclick="window.open('kk-part3-merchant.html')">📊 Merchant</button>
+    <button class="role-tab" onclick="window.open('kk-part4-admin.html')">⚙️ Admin</button>
+  </div>
+  <div style="margin-left:auto;display:flex;gap:6px;">
+    <span class="part-badge">PART 2 / 4</span>
+    <span class="sandbox-badge">SANDBOX</span>
+  </div>
+</div>
+
+<!-- KASIR LAYOUT -->
+<div class="kasir-wrap">
+  <!-- SIDEBAR -->
+  <div class="sidebar">
+    <div class="sidebar-header">
+      <div class="sidebar-logo">KK</div>
+      <div>
+        <div class="sidebar-brand">KantinKita</div>
+        <div class="sidebar-tenant">Kantin Pak Budi</div>
+      </div>
+    </div>
+    <div class="sidebar-nav">
+      <div class="sidebar-section">Transaksi</div>
+      <div class="sidebar-item active" onclick="POS.showPage('pos',this)"><span class="sidebar-item-icon">🧾</span>Point of Sale</div>
+      <div class="sidebar-item" onclick="POS.showPage('orders',this)"><span class="sidebar-item-icon">📋</span>Daftar Order<span class="sidebar-chip" id="orderBadge">5</span></div>
+      <div class="sidebar-section">Manajemen</div>
+      <div class="sidebar-item" onclick="POS.showPage('menu',this)"><span class="sidebar-item-icon">🍛</span>Kelola Menu</div>
+      <div class="sidebar-item" onclick="POS.showPage('staff',this)"><span class="sidebar-item-icon">👥</span>Data Staff</div>
+      <div class="sidebar-section">Laporan</div>
+      <div class="sidebar-item" onclick="POS.showPage('report',this)"><span class="sidebar-item-icon">📊</span>Laporan Harian</div>
+      <div class="sidebar-item" onclick="POS.showPage('report-weekly',this)"><span class="sidebar-item-icon">📈</span>Laporan Mingguan</div>
+      <div class="sidebar-section">Konfigurasi</div>
+      <div class="sidebar-item" onclick="POS.showPage('settings',this)"><span class="sidebar-item-icon">⚙️</span>Pengaturan Kasir</div>
+    </div>
+    <div class="sidebar-footer">
+      <div class="sidebar-avatar">BK</div>
+      <div>
+        <div class="sidebar-user-name">Budi Kasir</div>
+        <div class="sidebar-user-role">Staff Kasir · Shift Pagi</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MAIN -->
+  <div class="main-area">
+    <div class="topbar">
+      <div>
+        <div class="topbar-title" id="pageTitle">Point of Sale</div>
+        <div class="topbar-sub" id="pageSub">Minggu, 15 Maret 2026 · Shift Pagi 07:00–15:00</div>
+      </div>
+      <div class="topbar-right">
+        <span class="badge badge-success"><span class="badge-dot"></span>Shift Aktif</span>
+        <span id="liveClockBadge" style="font-family:var(--font-mono);font-size:12px;color:var(--color-text-muted);"></span>
+        <button class="btn btn-sm btn-ghost-dark" style="color:var(--c-red-500);border-color:var(--c-red-200);background:var(--c-red-100);" onclick="POS.showModal('danger','Akhiri Shift?','Laporan shift akan dibuat otomatis. Transaksi yang belum selesai perlu diserahkan ke kasir berikutnya.',function(){POS.toast('i','👋','Shift Selesai','Laporan shift Pagi telah disimpan')})">Akhiri Shift</button>
+      </div>
+    </div>
+
+    <!-- ═══ PAGE: POS ═══ -->
+    <div class="subpage active" id="page-pos">
+      <div class="pos-layout" style="position:relative;flex:1;">
+        <!-- Success overlay -->
+        <div class="pos-success" id="posSuccess">
+          <div class="pos-success-icon">✅</div>
+          <div class="pos-success-title">Pembayaran Berhasil!</div>
+          <div class="pos-success-amount" id="psAmount">Rp 0</div>
+          <div style="font-size:13px;color:var(--color-text-muted);" id="psMethod">via Tunai</div>
+          <div class="pos-receipt" id="psReceipt"></div>
+          <div style="display:flex;gap:8px;margin-top:8px;">
+            <button class="btn btn-primary" onclick="POS.newTransaction()">🆕 Transaksi Baru</button>
+            <button class="btn btn-secondary" onclick="POS.printReceipt()">🖨 Cetak Struk</button>
+          </div>
+        </div>
+        <!-- Left: Menu -->
+        <div class="pos-left">
+          <div class="pos-toolbar">
+            <div style="flex:1;position:relative;">
+              <span style="position:absolute;left:10px;top:50%;transform:translateY(-50%);font-size:13px;color:var(--color-text-muted);pointer-events:none;">🔍</span>
+              <input class="input input-sm" style="padding-left:32px;" placeholder="Cari menu..." id="posSearch" oninput="POS.filterItems(this.value)">
+            </div>
+            <button class="btn btn-sm btn-secondary" onclick="POS.showModal('success','Produk Baru','Tambahkan produk baru ke menu dari halaman Kelola Menu.',null)">+ Item</button>
+          </div>
+          <div class="pos-cats" id="posCats">
+            <button class="pos-cat active" onclick="POS.filterCat('semua',this)">Semua</button>
+            <button class="pos-cat" onclick="POS.filterCat('makanan',this)">🍛 Makanan</button>
+            <button class="pos-cat" onclick="POS.filterCat('minuman',this)">🥤 Minuman</button>
+            <button class="pos-cat" onclick="POS.filterCat('snack',this)">🍡 Snack</button>
+          </div>
+          <div class="pos-grid" id="posGrid"></div>
+        </div>
+        <!-- Right: Order -->
+        <div class="pos-right">
+          <div class="pos-order-header">
+            <div>
+              <div class="pos-order-title">Pesanan Baru</div>
+              <div class="pos-order-id" id="posOrdId">ORD-20260315-0043</div>
+            </div>
+            <button class="btn btn-sm" style="background:var(--c-red-100);color:var(--c-red-500);border-color:var(--c-red-200);" onclick="POS.clearOrder()">🗑 Hapus</button>
+          </div>
+          <div class="pos-items-wrap" id="posOrderWrap">
+            <div class="pos-empty" id="posEmpty">
+              <div class="pos-empty-icon">🛒</div>
+              <div style="font-weight:700;">Keranjang Kosong</div>
+              <div>Klik menu di sebelah kiri untuk menambah item</div>
+            </div>
+          </div>
+          <div class="pos-footer">
+            <div class="pos-total-row">
+              <span class="pos-total-label">Total Pembayaran</span>
+              <span class="pos-total-val" id="posTotalDisplay">Rp 0</span>
+            </div>
+            <!-- Numpad -->
+            <div id="cashInputWrap" style="display:none;margin-bottom:10px;">
+              <label class="form-label">Uang Diterima</label>
+              <div style="display:flex;gap:6px;margin-bottom:6px;">
+                <input class="input input-sm" id="cashInput" type="number" placeholder="Rp 0" oninput="POS.calcChange(this.value)">
+                <div style="font-size:12px;color:var(--color-text-muted);white-space:nowrap;align-self:center;" id="changeDisplay"></div>
+              </div>
+              <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:4px;">
+                <button onclick="POS.quickCash(5000)" class="pos-pay-btn">5K</button>
+                <button onclick="POS.quickCash(10000)" class="pos-pay-btn">10K</button>
+                <button onclick="POS.quickCash(20000)" class="pos-pay-btn">20K</button>
+                <button onclick="POS.quickCash(50000)" class="pos-pay-btn">50K</button>
+              </div>
+            </div>
+            <div class="pos-pay-grid">
+              <button class="pos-pay-btn sel" id="pp-tunai" onclick="POS.selectPayment('tunai',this)">💵 Tunai</button>
+              <button class="pos-pay-btn" id="pp-qris" onclick="POS.selectPayment('qris',this)">📱 QRIS</button>
+              <button class="pos-pay-btn" id="pp-wallet" onclick="POS.selectPayment('wallet',this)">💳 Wallet</button>
+              <button class="pos-pay-btn" id="pp-debit" onclick="POS.selectPayment('debit',this)">🏦 Debit</button>
+            </div>
+            <button class="pos-charge-btn" id="posChargeBtn" onclick="POS.processPayment()" disabled>Proses Pembayaran</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ PAGE: ORDERS KANBAN ═══ -->
+    <div class="subpage" id="page-orders">
+      <div class="order-status-bar">
+        <button class="order-filter-tab active" onclick="POS.filterOrderTab('all',this)">Semua (5)</button>
+        <button class="order-filter-tab" onclick="POS.filterOrderTab('waiting',this)">Menunggu</button>
+        <button class="order-filter-tab" onclick="POS.filterOrderTab('cooking',this)">Dimasak</button>
+        <button class="order-filter-tab" onclick="POS.filterOrderTab('ready',this)">Siap</button>
+        <div style="margin-left:auto;display:flex;gap:6px;">
+          <button class="btn btn-sm btn-secondary" onclick="POS.toast('i','🔄','Refresh','Memuat ulang data order')">🔄 Refresh</button>
+          <button class="btn btn-sm btn-primary" onclick="POS.showPage('pos',document.querySelector('.sidebar-item'))">+ Order Baru</button>
+        </div>
+      </div>
+      <div class="order-kanban" id="orderKanban"></div>
+    </div>
+
+    <!-- ═══ PAGE: MENU MANAGEMENT ═══ -->
+    <div class="subpage" id="page-menu">
+      <div class="content-scroll">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+          <div><div style="font-size:20px;font-weight:800;">Kelola Menu</div><div style="font-size:12px;color:var(--color-text-muted);">12 item aktif · 1 nonaktif</div></div>
+          <button class="btn btn-primary" onclick="POS.showAddMenuForm()">+ Tambah Menu</button>
+        </div>
+        <!-- Add/Edit Form -->
+        <div class="menu-form-panel" id="menuFormPanel" style="display:none;">
+          <div class="menu-form-title" id="menuFormTitle">➕ Tambah Menu Baru</div>
+          <div class="grid-2">
+            <div>
+              <div class="form-group">
+                <label class="form-label">Nama Menu *</label>
+                <input class="input" id="mfName" placeholder="Contoh: Nasi Ayam Geprek">
+              </div>
+              <div class="form-group">
+                <label class="form-label">Kategori *</label>
+                <select class="input" id="mfCat">
+                  <option value="makanan">Makanan</option>
+                  <option value="minuman">Minuman</option>
+                  <option value="snack">Snack</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Harga (Rp) *</label>
+                <input class="input" id="mfPrice" type="number" placeholder="18000">
+              </div>
+              <div class="form-group">
+                <label class="form-label">Stok Awal</label>
+                <input class="input" id="mfStock" type="number" placeholder="50">
+              </div>
+            </div>
+            <div>
+              <div class="form-group">
+                <label class="form-label">Emoji / Ikon</label>
+                <div style="display:grid;grid-template-columns:repeat(6,1fr);gap:6px;" id="emojiPicker">
+                  <button onclick="POS.pickEmoji(this,'🍛')" class="emoji-pick-btn">🍛</button>
+                  <button onclick="POS.pickEmoji(this,'🍜')" class="emoji-pick-btn">🍜</button>
+                  <button onclick="POS.pickEmoji(this,'🍚')" class="emoji-pick-btn">🍚</button>
+                  <button onclick="POS.pickEmoji(this,'🥤')" class="emoji-pick-btn">🥤</button>
+                  <button onclick="POS.pickEmoji(this,'🍫')" class="emoji-pick-btn">🍫</button>
+                  <button onclick="POS.pickEmoji(this,'☕')" class="emoji-pick-btn">☕</button>
+                  <button onclick="POS.pickEmoji(this,'🥟')" class="emoji-pick-btn">🥟</button>
+                  <button onclick="POS.pickEmoji(this,'🍌')" class="emoji-pick-btn">🍌</button>
+                  <button onclick="POS.pickEmoji(this,'🍠')" class="emoji-pick-btn">🍠</button>
+                  <button onclick="POS.pickEmoji(this,'🥞')" class="emoji-pick-btn">🥞</button>
+                  <button onclick="POS.pickEmoji(this,'🍲')" class="emoji-pick-btn">🍲</button>
+                  <button onclick="POS.pickEmoji(this,'🥑')" class="emoji-pick-btn">🥑</button>
+                </div>
+                <div style="margin-top:8px;display:flex;align-items:center;gap:8px;">
+                  <div style="font-size:32px;" id="selectedEmoji">🍛</div>
+                  <div style="font-size:12px;color:var(--color-text-muted);">Emoji terpilih</div>
+                </div>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Deskripsi</label>
+                <textarea class="input" style="height:70px;padding-top:8px;resize:none;" id="mfDesc" placeholder="Deskripsi singkat menu..."></textarea>
+              </div>
+            </div>
+          </div>
+          <div style="display:flex;gap:8px;">
+            <button class="btn btn-primary" onclick="POS.saveMenu()">💾 Simpan Menu</button>
+            <button class="btn btn-secondary" onclick="document.getElementById('menuFormPanel').style.display='none'">Batal</button>
+          </div>
+        </div>
+        <!-- Menu table -->
+        <div class="panel" style="margin-bottom:0;">
+          <div class="panel-header">
+            <div class="panel-title">📋 Daftar Menu</div>
+            <div style="display:flex;gap:6px;">
+              <input class="input input-sm" style="width:160px;" placeholder="Cari menu...">
+              <select class="input input-sm" style="width:120px;">
+                <option>Semua Kategori</option>
+                <option>Makanan</option>
+                <option>Minuman</option>
+                <option>Snack</option>
+              </select>
+            </div>
+          </div>
+          <table class="data-table" id="menuTable">
+            <thead><tr><th>Menu</th><th>Kategori</th><th>Harga</th><th>Stok</th><th>Status</th><th>Terjual</th><th>Aksi</th></tr></thead>
+            <tbody id="menuTbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ PAGE: STAFF ═══ -->
+    <div class="subpage" id="page-staff">
+      <div class="content-scroll">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+          <div><div style="font-size:20px;font-weight:800;">Data Staff</div><div style="font-size:12px;color:var(--color-text-muted);">4 staff aktif hari ini</div></div>
+          <button class="btn btn-primary" onclick="POS.toast('i','➕','Tambah Staff','Form tambah staff baru dibuka')">+ Tambah Staff</button>
+        </div>
+        <div class="grid-3" style="margin-bottom:16px;">
+          <div class="stat-card"><div class="stat-icon" style="background:var(--c-primary-100);">👥</div><div class="stat-val">4</div><div class="stat-label">Staff Hari Ini</div></div>
+          <div class="stat-card"><div class="stat-icon" style="background:var(--c-emerald-100);">✅</div><div class="stat-val">2</div><div class="stat-label">Shift Aktif</div></div>
+          <div class="stat-card"><div class="stat-icon" style="background:var(--c-amber-100);">⏰</div><div class="stat-val">07:00</div><div class="stat-label">Shift Dimulai</div></div>
+        </div>
+        <div class="panel">
+          <div class="panel-header"><div class="panel-title">👥 Daftar Staff & Shift</div></div>
+          <table class="data-table">
+            <thead><tr><th>Nama</th><th>Jabatan</th><th>Shift</th><th>Jam Masuk</th><th>Transaksi</th><th>Status</th><th>Aksi</th></tr></thead>
+            <tbody>
+              <tr>
+                <td><div style="font-weight:700;">Budi Santoso</div><div style="font-size:11px;color:var(--color-text-muted);">ID: KSR-001</div></td>
+                <td>Kasir Senior</td>
+                <td><span class="badge badge-info">Pagi</span></td>
+                <td><span style="font-family:var(--font-mono);font-size:12px;">07:02</span></td>
+                <td><strong>23</strong></td>
+                <td><span class="badge badge-success"><span class="badge-dot"></span>Aktif</span></td>
+                <td><button class="btn btn-sm btn-secondary" onclick="POS.toast('i','👤','Detail Staff','Membuka profil Budi Santoso')">Detail</button></td>
+              </tr>
+              <tr>
+                <td><div style="font-weight:700;">Siti Rahma</div><div style="font-size:11px;color:var(--color-text-muted);">ID: KSR-002</div></td>
+                <td>Kasir</td>
+                <td><span class="badge badge-info">Pagi</span></td>
+                <td><span style="font-family:var(--font-mono);font-size:12px;">07:15</span></td>
+                <td><strong>18</strong></td>
+                <td><span class="badge badge-success"><span class="badge-dot"></span>Aktif</span></td>
+                <td><button class="btn btn-sm btn-secondary" onclick="POS.toast('i','👤','Detail Staff','Membuka profil Siti Rahma')">Detail</button></td>
+              </tr>
+              <tr>
+                <td><div style="font-weight:700;">Andi Wijaya</div><div style="font-size:11px;color:var(--color-text-muted);">ID: KSR-003</div></td>
+                <td>Pelayan</td>
+                <td><span class="badge badge-warning">Siang</span></td>
+                <td><span style="font-family:var(--font-mono);font-size:12px;">—</span></td>
+                <td>—</td>
+                <td><span class="badge badge-neutral">Belum Masuk</span></td>
+                <td><button class="btn btn-sm btn-secondary" onclick="POS.toast('i','👤','Detail Staff','Membuka profil Andi Wijaya')">Detail</button></td>
+              </tr>
+              <tr>
+                <td><div style="font-weight:700;">Dewi Lestari</div><div style="font-size:11px;color:var(--color-text-muted);">ID: KSR-004</div></td>
+                <td>Chef</td>
+                <td><span class="badge badge-info">Pagi</span></td>
+                <td><span style="font-family:var(--font-mono);font-size:12px;">06:45</span></td>
+                <td>—</td>
+                <td><span class="badge badge-success"><span class="badge-dot"></span>Aktif</span></td>
+                <td><button class="btn btn-sm btn-secondary" onclick="POS.toast('i','👤','Detail Staff','Membuka profil Dewi Lestari')">Detail</button></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ PAGE: REPORT DAILY ═══ -->
+    <div class="subpage" id="page-report">
+      <div class="content-scroll">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+          <div><div style="font-size:20px;font-weight:800;">Laporan Harian</div><div style="font-size:12px;color:var(--color-text-muted);">Minggu, 15 Maret 2026</div></div>
+          <div style="display:flex;gap:8px;">
+            <input class="input input-sm" type="date" value="2026-03-15" style="width:140px;">
+            <button class="btn btn-sm btn-primary" onclick="POS.toast('s','📤','Export PDF','Laporan sedang diekspor...')">↑ Export PDF</button>
+          </div>
+        </div>
+        <div class="stat-grid">
+          <div class="stat-card"><div class="stat-icon" style="background:var(--c-primary-100);">💰</div><div class="stat-val" style="color:var(--c-primary-700);" id="repRevenue">Rp 487K</div><div class="stat-label">Total Omset</div><div class="stat-change up">▲ +12% dari kemarin</div></div>
+          <div class="stat-card"><div class="stat-icon" style="background:var(--c-amber-100);">📋</div><div class="stat-val" id="repTx">38</div><div class="stat-label">Transaksi</div><div class="stat-change up">▲ +5</div></div>
+          <div class="stat-card"><div class="stat-icon" style="background:var(--c-blue-100);">🧾</div><div class="stat-val">Rp 12.8K</div><div class="stat-label">Rata-rata Transaksi</div><div class="stat-change neutral">→ Stabil</div></div>
+          <div class="stat-card"><div class="stat-icon" style="background:var(--c-emerald-100);">⭐</div><div class="stat-val">4.8</div><div class="stat-label">Rating Rata-rata</div><div class="stat-change up">▲ +0.1</div></div>
+        </div>
+        <div class="grid-2">
+          <div class="panel" style="margin-bottom:0;">
+            <div class="panel-header"><div class="panel-title">📈 Penjualan per Jam</div><span style="font-size:11px;color:var(--color-text-muted);">Total hari ini: Rp 487.000</span></div>
+            <div style="padding:16px;">
+              <div class="chart-bar-group">
+                <div class="chart-bar-col"><div class="chart-bar l" style="height:28%;"></div><div class="chart-bar-label">07</div></div>
+                <div class="chart-bar-col"><div class="chart-bar" style="height:52%;"></div><div class="chart-bar-label">08</div></div>
+                <div class="chart-bar-col"><div class="chart-bar" style="height:78%;"></div><div class="chart-bar-label">09</div></div>
+                <div class="chart-bar-col"><div class="chart-bar" style="height:95%;"></div><div class="chart-bar-label">10</div></div>
+                <div class="chart-bar-col"><div class="chart-bar a" style="height:100%;"></div><div class="chart-bar-label">11</div></div>
+                <div class="chart-bar-col"><div class="chart-bar" style="height:88%;"></div><div class="chart-bar-label">12</div></div>
+                <div class="chart-bar-col"><div class="chart-bar l" style="height:45%;"></div><div class="chart-bar-label">13</div></div>
+                <div class="chart-bar-col"><div class="chart-bar l" style="height:22%;"></div><div class="chart-bar-label">14</div></div>
+              </div>
+              <div style="display:flex;justify-content:space-between;margin-top:8px;font-size:11px;color:var(--color-text-muted);">
+                <span>Min: Rp 27K (07:00)</span><span>Puncak: Rp 124K (11:00)</span>
+              </div>
+            </div>
+          </div>
+          <div class="panel" style="margin-bottom:0;">
+            <div class="panel-header"><div class="panel-title">🏆 Menu Terlaris</div></div>
+            <div style="padding:16px;">
+              <div class="rank-item"><div class="rank-badge gold">1</div><div class="rank-info"><div class="rank-name">Nasi Ayam Geprek</div><div class="rank-bar-wrap"><div class="rank-fill" style="width:90%;"></div></div></div><div class="rank-count">47 pcs</div></div>
+              <div class="rank-item"><div class="rank-badge gold">2</div><div class="rank-info"><div class="rank-name">Es Teh Manis</div><div class="rank-bar-wrap"><div class="rank-fill" style="width:72%;"></div></div></div><div class="rank-count">38 cup</div></div>
+              <div class="rank-item"><div class="rank-badge">3</div><div class="rank-info"><div class="rank-name">Mie Goreng Spesial</div><div class="rank-bar-wrap"><div class="rank-fill" style="width:55%;"></div></div></div><div class="rank-count">29 pcs</div></div>
+              <div class="rank-item"><div class="rank-badge">4</div><div class="rank-info"><div class="rank-name">Risoles Sayuran</div><div class="rank-bar-wrap"><div class="rank-fill" style="width:38%;"></div></div></div><div class="rank-count">20 pcs</div></div>
+            </div>
+          </div>
+        </div>
+        <div class="panel" style="margin-top:16px;">
+          <div class="panel-header"><div class="panel-title">💳 Pembayaran per Metode</div></div>
+          <table class="data-table">
+            <thead><tr><th>Metode</th><th>Jumlah Transaksi</th><th>Total Nilai</th><th>%</th></tr></thead>
+            <tbody>
+              <tr><td>💵 Tunai</td><td>15</td><td style="font-weight:700;color:var(--c-primary-700);">Rp 187.000</td><td><span class="badge badge-neutral">38%</span></td></tr>
+              <tr><td>📱 QRIS</td><td>14</td><td style="font-weight:700;color:var(--c-primary-700);">Rp 164.000</td><td><span class="badge badge-neutral">34%</span></td></tr>
+              <tr><td>💳 KK Wallet</td><td>7</td><td style="font-weight:700;color:var(--c-primary-700);">Rp 98.000</td><td><span class="badge badge-neutral">20%</span></td></tr>
+              <tr><td>🏦 Debit</td><td>2</td><td style="font-weight:700;color:var(--c-primary-700);">Rp 38.000</td><td><span class="badge badge-neutral">8%</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ PAGE: REPORT WEEKLY ═══ -->
+    <div class="subpage" id="page-report-weekly">
+      <div class="content-scroll">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+          <div><div style="font-size:20px;font-weight:800;">Laporan Mingguan</div><div style="font-size:12px;color:var(--color-text-muted);">9 – 15 Maret 2026</div></div>
+          <button class="btn btn-sm btn-primary" onclick="POS.toast('s','📤','Export','Laporan mingguan diekspor')">↑ Export</button>
+        </div>
+        <div class="stat-grid stat-grid-3">
+          <div class="stat-card"><div class="stat-icon" style="background:var(--c-primary-100);">💰</div><div class="stat-val" style="color:var(--c-primary-700);">Rp 2.4M</div><div class="stat-label">Total Omset Minggu Ini</div><div class="stat-change up">▲ +18% dari minggu lalu</div></div>
+          <div class="stat-card"><div class="stat-icon" style="background:var(--c-amber-100);">📋</div><div class="stat-val">214</div><div class="stat-label">Total Transaksi</div><div class="stat-change up">▲ +32</div></div>
+          <div class="stat-card"><div class="stat-icon" style="background:var(--c-emerald-100);">📅</div><div class="stat-val">Jumat</div><div class="stat-label">Hari Terbaik</div><div class="stat-change up">Rp 524K</div></div>
+        </div>
+        <div class="panel">
+          <div class="panel-header"><div class="panel-title">📊 Omset per Hari</div></div>
+          <div style="padding:16px;">
+            <div class="chart-bar-group" style="height:140px;">
+              <div class="chart-bar-col"><div class="chart-bar l" style="height:55%;"></div><div class="chart-bar-label">Sen<br>287K</div></div>
+              <div class="chart-bar-col"><div class="chart-bar" style="height:70%;"></div><div class="chart-bar-label">Sel<br>341K</div></div>
+              <div class="chart-bar-col"><div class="chart-bar" style="height:60%;"></div><div class="chart-bar-label">Rab<br>298K</div></div>
+              <div class="chart-bar-col"><div class="chart-bar" style="height:85%;"></div><div class="chart-bar-label">Kam<br>412K</div></div>
+              <div class="chart-bar-col"><div class="chart-bar a" style="height:100%;"></div><div class="chart-bar-label">Jum<br>524K</div></div>
+              <div class="chart-bar-col"><div class="chart-bar" style="height:90%;"></div><div class="chart-bar-label">Sab<br>456K</div></div>
+              <div class="chart-bar-col"><div class="chart-bar" style="height:78%;"></div><div class="chart-bar-label">Min<br>387K</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ PAGE: SETTINGS ═══ -->
+    <div class="subpage" id="page-settings">
+      <div class="content-scroll">
+        <div style="font-size:20px;font-weight:800;margin-bottom:16px;">Pengaturan Kasir</div>
+        <div class="grid-2">
+          <div>
+            <div class="settings-section">
+              <div class="settings-section-title">🏪 Informasi Toko</div>
+              <div style="padding:16px;display:flex;flex-direction:column;gap:12px;">
+                <div class="form-group" style="margin-bottom:0;"><label class="form-label">Nama Toko</label><input class="input" value="Kantin Pak Budi" id="stSettName"></div>
+                <div class="form-group" style="margin-bottom:0;"><label class="form-label">Lokasi / Gedung</label><input class="input" value="Gedung A, Lantai 1" id="stSettLoc"></div>
+                <div class="grid-2" style="gap:8px;">
+                  <div class="form-group" style="margin-bottom:0;"><label class="form-label">Jam Buka</label><input class="input" type="time" value="07:00"></div>
+                  <div class="form-group" style="margin-bottom:0;"><label class="form-label">Jam Tutup</label><input class="input" type="time" value="15:00"></div>
+                </div>
+                <button class="btn btn-primary" onclick="POS.saveSettings()">💾 Simpan</button>
+              </div>
+            </div>
+            <div class="settings-section" style="margin-top:16px;">
+              <div class="settings-section-title">🖨 Printer & Receipt</div>
+              <div class="settings-row">
+                <div class="settings-icon" style="background:var(--c-neutral-100);">🖨</div>
+                <div class="settings-label"><div class="settings-label-title">Printer Struk</div><div class="settings-label-sub">Epson TM-T20III · Connected</div></div>
+                <span class="badge badge-success">Online</span>
+              </div>
+              <div class="settings-row">
+                <div class="settings-icon" style="background:var(--c-primary-100);">📋</div>
+                <div class="settings-label"><div class="settings-label-title">Auto Print Struk</div><div class="settings-label-sub">Cetak otomatis setiap transaksi</div></div>
+                <button class="toggle on" onclick="this.classList.toggle('on');this.classList.toggle('off');"></button>
+              </div>
+              <div class="settings-row">
+                <div class="settings-icon" style="background:var(--c-blue-100);">📧</div>
+                <div class="settings-label"><div class="settings-label-title">Kirim Struk via Email/WA</div><div class="settings-label-sub">Opsional untuk pelanggan</div></div>
+                <button class="toggle off" onclick="this.classList.toggle('on');this.classList.toggle('off');"></button>
+              </div>
+            </div>
+          </div>
+          <div>
+            <div class="settings-section">
+              <div class="settings-section-title">🔔 Notifikasi</div>
+              <div class="settings-row">
+                <div class="settings-icon" style="background:var(--c-amber-100);">🔔</div>
+                <div class="settings-label"><div class="settings-label-title">Notif Order Masuk</div><div class="settings-label-sub">Bunyi + visual saat order baru</div></div>
+                <button class="toggle on" onclick="this.classList.toggle('on');this.classList.toggle('off');"></button>
+              </div>
+              <div class="settings-row">
+                <div class="settings-icon" style="background:var(--c-red-100);">⚠️</div>
+                <div class="settings-label"><div class="settings-label-title">Notif Stok Menipis</div><div class="settings-label-sub">Alert saat stok &lt; 5</div></div>
+                <button class="toggle on" onclick="this.classList.toggle('on');this.classList.toggle('off');"></button>
+              </div>
+            </div>
+            <div class="settings-section" style="margin-top:16px;">
+              <div class="settings-section-title">💰 Pajak & Biaya</div>
+              <div style="padding:16px;display:flex;flex-direction:column;gap:12px;">
+                <div style="display:flex;align-items:center;justify-content:space-between;">
+                  <div><div style="font-size:13px;font-weight:600;">Aktifkan PPN (11%)</div><div style="font-size:11px;color:var(--color-text-muted);">Ditambahkan ke total transaksi</div></div>
+                  <button class="toggle off" id="ppnToggle" onclick="this.classList.toggle('on');this.classList.toggle('off');POS.togglePPN(this)"></button>
+                </div>
+                <div class="form-group" style="margin-bottom:0;"><label class="form-label">Biaya Layanan (Rp)</label><input class="input" type="number" value="500" id="stSettFee"></div>
+                <div style="display:flex;align-items:center;justify-content:space-between;">
+                  <div><div style="font-size:13px;font-weight:600;">Rounding ke Rp 500</div><div style="font-size:11px;color:var(--color-text-muted);">Pembulatan harga akhir</div></div>
+                  <button class="toggle off" onclick="this.classList.toggle('on');this.classList.toggle('off');"></button>
+                </div>
+              </div>
+            </div>
+            <div class="settings-section" style="margin-top:16px;">
+              <div class="settings-section-title">🔐 Keamanan</div>
+              <div class="settings-row">
+                <div class="settings-icon" style="background:var(--c-neutral-100);">🔑</div>
+                <div class="settings-label"><div class="settings-label-title">PIN Kasir</div><div class="settings-label-sub">Wajib input PIN untuk buka shift</div></div>
+                <button class="btn btn-sm btn-secondary" onclick="POS.toast('i','🔑','Ganti PIN','Form ganti PIN kasir dibuka')">Ganti PIN</button>
+              </div>
+              <div class="settings-row">
+                <div class="settings-icon" style="background:var(--c-red-100);">🚪</div>
+                <div class="settings-label"><div class="settings-label-title">Auto Lock</div><div class="settings-label-sub">Kunci setelah 10 menit idle</div></div>
+                <button class="toggle on" onclick="this.classList.toggle('on');this.classList.toggle('off');"></button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div><!-- end main-area -->
+</div><!-- end kasir-wrap -->
+
+<style>
+.emoji-pick-btn{width:100%;aspect-ratio:1;background:white;border:1.5px solid var(--color-border);border-radius:var(--r-sm);font-size:18px;cursor:pointer;transition:all .15s;display:flex;align-items:center;justify-content:center}
+.emoji-pick-btn:hover{background:var(--c-primary-50);border-color:var(--c-primary-400)}
+.emoji-pick-btn.sel{background:var(--c-primary-100);border-color:var(--c-primary-600)}
+</style>
+
+<script>
+// ============================================================
+//  DATA
+// ============================================================
+const PRODUCTS = [
+  {id:1,name:'Nasi Ayam Geprek',price:18000,emoji:'🍛',cat:'makanan',stock:50,sold:387,active:true},
+  {id:2,name:'Mie Goreng Spesial',price:20000,emoji:'🍜',cat:'makanan',stock:30,sold:215,active:true},
+  {id:3,name:'Nasi Uduk + Lauk',price:15000,emoji:'🍚',cat:'makanan',stock:20,sold:180,active:true},
+  {id:4,name:'Lontong Sayur',price:12000,emoji:'🫙',cat:'makanan',stock:15,sold:95,active:true},
+  {id:5,name:'Soto Ayam',price:16000,emoji:'🍲',cat:'makanan',stock:12,sold:67,active:true},
+  {id:6,name:'Es Teh Manis',price:5000,emoji:'🥤',cat:'minuman',stock:100,sold:480,active:true},
+  {id:7,name:'Es Coklat',price:8000,emoji:'🍫',cat:'minuman',stock:80,sold:120,active:true},
+  {id:8,name:'Kopi Susu',price:10000,emoji:'☕',cat:'minuman',stock:60,sold:89,active:true},
+  {id:9,name:'Jus Alpukat',price:12000,emoji:'🥑',cat:'minuman',stock:25,sold:67,active:true},
+  {id:10,name:'Risoles Sayuran',price:5000,emoji:'🥟',cat:'snack',stock:60,sold:200,active:true},
+  {id:11,name:'Pisang Goreng',price:8000,emoji:'🍌',cat:'snack',stock:0,sold:145,active:false},
+  {id:12,name:'Singkong Goreng',price:5000,emoji:'🍠',cat:'snack',stock:40,sold:98,active:true},
+  {id:13,name:'Martabak Mini',price:10000,emoji:'🥞',cat:'snack',stock:20,sold:56,active:true},
+];
+
+const ORDERS_DATA = [
+  {id:'ORD-0043',name:'Mahasiswa A',items:'Nasi Geprek × 1, Es Teh × 1',price:23000,status:'waiting',time:'09:45',method:'QRIS'},
+  {id:'ORD-0042',name:'Ahmad Naufal',items:'Nasi Geprek × 1, Es Teh × 2, Risoles',price:33500,status:'cooking',time:'09:33',method:'Wallet'},
+  {id:'ORD-0041',name:'Rina Susanti',items:'Es Coklat, Pisang Goreng × 2',price:16000,status:'ready',time:'09:28',method:'Tunai'},
+  {id:'ORD-0040',name:'Dito Pratama',items:'Mie Goreng Spesial',price:20000,status:'done',time:'09:20',method:'Tunai'},
+  {id:'ORD-0039',name:'Siti Rahma',items:'Nasi Geprek × 2, Es Jeruk',price:40000,status:'done',time:'09:10',method:'QRIS'},
+];
+
+// ============================================================
+//  STATE
+// ============================================================
+const STATE = {
+  cart: {},          // {id: qty}
+  activeCat: 'semua',
+  payMethod: 'tunai',
+  modalCb: null,
+  completedCount: 0,
+  todayRevenue: 0,
+  selectedEmoji: '🍛',
+  orders: [...ORDERS_DATA],
+  ppnEnabled: false,
+};
+
+// ============================================================
+//  POS CONTROLLER
+// ============================================================
+const POS = {
+  // ── TOAST ──
+  toast(type, icon, title, msg) {
+    const el = document.createElement('div');
+    el.className = `toast ${type}`;
+    el.innerHTML = `<div class="t-icon">${icon}</div><div class="t-body"><div class="t-title">${title}</div><div class="t-msg">${msg}</div></div>`;
+    document.getElementById('TC').appendChild(el);
+    setTimeout(()=>el.remove(), 3500);
+  },
+  // ── MODAL ──
+  showModal(type,title,body,cb){
+    const icons={success:'✅',danger:'🗑️',warning:'⚠️'};
+    const clsIcon={success:'success',danger:'danger',warning:'warning'};
+    const clsBtn={success:'confirm',danger:'danger',warning:'confirm'};
+    document.getElementById('MI').textContent=icons[type];
+    document.getElementById('MI').className=`modal-icon ${clsIcon[type]}`;
+    document.getElementById('MT').textContent=title;
+    document.getElementById('MB').textContent=body;
+    document.getElementById('MCB').className=`modal-btn ${clsBtn[type]}`;
+    STATE.modalCb=cb;
+    document.getElementById('MO').classList.add('open');
+  },
+  closeModal(){document.getElementById('MO').classList.remove('open')},
+  confirmModal(){this.closeModal();if(STATE.modalCb)STATE.modalCb()},
+
+  // ── PAGE NAV ──
+  showPage(page, sidebarItem) {
+    document.querySelectorAll('.subpage').forEach(p=>p.classList.remove('active'));
+    document.querySelectorAll('.sidebar-item').forEach(i=>i.classList.remove('active'));
+    const el = document.getElementById(`page-${page}`);
+    if(el) el.classList.add('active');
+    if(sidebarItem && sidebarItem.classList) sidebarItem.classList.add('active');
+    const titles = {
+      pos:'Point of Sale', orders:'Daftar Order', menu:'Kelola Menu',
+      staff:'Data Staff', report:'Laporan Harian', 'report-weekly':'Laporan Mingguan',
+      settings:'Pengaturan Kasir'
+    };
+    document.getElementById('pageTitle').textContent = titles[page] || 'Kasir';
+    if(page==='orders') this.renderKanban();
+    if(page==='menu') this.renderMenuTable();
+  },
+
+  // ── POS RENDERING ──
+  renderPOSGrid(filter='', cat='semua'){
+    const grid = document.getElementById('posGrid');
+    const filtered = PRODUCTS.filter(p=>
+      (cat==='semua'||p.cat===cat) &&
+      p.name.toLowerCase().includes(filter.toLowerCase())
+    );
+    grid.innerHTML = filtered.map(p => {
+      const qty = STATE.cart[p.id]||0;
+      return `<div class="pos-item ${!p.active||p.stock===0?'out':''}" onclick="POS.addItem(${p.id})">
+        ${qty>0?`<div class="pos-item-count">${qty}</div>`:''}
+        <span class="pos-item-emoji">${p.emoji}</span>
+        <div class="pos-item-name">${p.name}</div>
+        <div class="pos-item-price">Rp ${p.price.toLocaleString('id')}</div>
+        ${p.stock===0?'<div style="font-size:9px;color:var(--c-red-500);font-weight:700;margin-top:2px;">HABIS</div>':''}
+      </div>`;
+    }).join('');
+  },
+
+  filterCat(cat, btn){
+    STATE.activeCat=cat;
+    document.querySelectorAll('.pos-cat').forEach(b=>b.classList.remove('active'));
+    if(btn) btn.classList.add('active');
+    this.renderPOSGrid(document.getElementById('posSearch').value, cat);
+  },
+
+  filterItems(q){ this.renderPOSGrid(q, STATE.activeCat); },
+
+  addItem(id){
+    const p = PRODUCTS.find(x=>x.id===id);
+    if(!p || !p.active || p.stock===0) return;
+    STATE.cart[id] = (STATE.cart[id]||0)+1;
+    this.updateOrderPanel();
+    this.renderPOSGrid(document.getElementById('posSearch').value, STATE.activeCat);
+  },
+
+  removeItem(id){
+    delete STATE.cart[id];
+    this.updateOrderPanel();
+    this.renderPOSGrid(document.getElementById('posSearch').value, STATE.activeCat);
+  },
+
+  changeQty(id, delta){
+    STATE.cart[id] = (STATE.cart[id]||0)+delta;
+    if(STATE.cart[id]<=0) delete STATE.cart[id];
+    this.updateOrderPanel();
+    this.renderPOSGrid(document.getElementById('posSearch').value, STATE.activeCat);
+  },
+
+  clearOrder(){
+    if(Object.keys(STATE.cart).length===0) return;
+    this.showModal('danger','Hapus Semua Item?','Semua item di pesanan ini akan dihapus.',()=>{
+      STATE.cart={};
+      this.updateOrderPanel();
+      this.renderPOSGrid('',STATE.activeCat);
+      this.toast('i','🗑','Dihapus','Pesanan dikosongkan');
+    });
+  },
+
+  updateOrderPanel(){
+    const total = Object.keys(STATE.cart).reduce((a,id)=>{
+      const p=PRODUCTS.find(x=>x.id==id);
+      return a+(p?p.price*STATE.cart[id]:0);
+    },0);
+    const count = Object.values(STATE.cart).reduce((a,b)=>a+b,0);
+    const fee = STATE.ppnEnabled ? Math.round(total*0.11) : 500;
+    const grandTotal = total + fee;
+
+    document.getElementById('posTotalDisplay').textContent = 'Rp '+grandTotal.toLocaleString('id');
+    document.getElementById('posChargeBtn').disabled = count===0;
+    document.getElementById('posChargeBtn').textContent = count===0
+      ? 'Proses Pembayaran'
+      : `Proses Pembayaran — Rp ${grandTotal.toLocaleString('id')}`;
+
+    const wrap = document.getElementById('posOrderWrap');
+    const emptyEl = document.getElementById('posEmpty');
+
+    if(count===0){
+      emptyEl.style.display='flex';
+      wrap.querySelectorAll('.pos-order-item').forEach(e=>e.remove());
+    } else {
+      emptyEl.style.display='none';
+      wrap.querySelectorAll('.pos-order-item').forEach(e=>e.remove());
+      Object.keys(STATE.cart).forEach(id=>{
+        const p=PRODUCTS.find(x=>x.id==id);
+        if(!p) return;
+        const div=document.createElement('div');
+        div.className='pos-order-item';
+        div.innerHTML=`
+          <span class="pos-oi-emoji">${p.emoji}</span>
+          <div class="pos-oi-info">
+            <div class="pos-oi-name">${p.name}</div>
+            <div class="pos-oi-sub">×${STATE.cart[id]} · @Rp ${p.price.toLocaleString('id')}</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:4px;">
+            <button onclick="POS.changeQty(${id},-1)" style="width:22px;height:22px;border-radius:50%;background:var(--c-neutral-100);border:1px solid var(--color-border);cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;">−</button>
+            <span style="font-size:12px;font-weight:800;min-width:16px;text-align:center;">${STATE.cart[id]}</span>
+            <button onclick="POS.changeQty(${id},1)" style="width:22px;height:22px;border-radius:50%;background:var(--c-primary-700);border:none;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;color:white;">+</button>
+          </div>
+          <span class="pos-oi-price">Rp ${(p.price*STATE.cart[id]).toLocaleString('id')}</span>
+          <button class="pos-oi-del" onclick="POS.removeItem(${id})">✕</button>`;
+        wrap.appendChild(div);
+      });
+    }
+
+    // Cash input toggle
+    document.getElementById('cashInputWrap').style.display = STATE.payMethod==='tunai'&&count>0?'block':'none';
+  },
+
+  selectPayment(method, btn){
+    STATE.payMethod=method;
+    document.querySelectorAll('.pos-pay-btn').forEach(b=>b.classList.remove('sel'));
+    btn.classList.add('sel');
+    document.getElementById('cashInputWrap').style.display = method==='tunai'&&Object.keys(STATE.cart).length>0?'block':'none';
+  },
+
+  quickCash(amount){
+    const input=document.getElementById('cashInput');
+    input.value=amount;
+    this.calcChange(amount);
+  },
+
+  calcChange(val){
+    const total=Object.keys(STATE.cart).reduce((a,id)=>{const p=PRODUCTS.find(x=>x.id==id);return a+(p?p.price*STATE.cart[id]:0);},0)+500;
+    const change=(parseInt(val)||0)-total;
+    document.getElementById('changeDisplay').textContent = change>=0?`Kembalian: Rp ${change.toLocaleString('id')}`:'Kurang';
+    document.getElementById('changeDisplay').style.color = change>=0?'var(--c-emerald-500)':'var(--c-red-500)';
+  },
+
+  processPayment(){
+    const total=Object.keys(STATE.cart).reduce((a,id)=>{const p=PRODUCTS.find(x=>x.id==id);return a+(p?p.price*STATE.cart[id]:0);},0)+500;
+    if(total<=500) return;
+
+    // Check cash amount
+    if(STATE.payMethod==='tunai'){
+      const cashVal=parseInt(document.getElementById('cashInput').value)||0;
+      if(cashVal<total-500){this.toast('w','⚠️','Uang Kurang','Masukkan jumlah uang yang diterima');return;}
+    }
+
+    const methodNames={tunai:'Tunai 💵',qris:'QRIS 📱',wallet:'KK Wallet 💳',debit:'Debit 🏦'};
+    const receipt = Object.keys(STATE.cart).map(id=>{
+      const p=PRODUCTS.find(x=>x.id==id);
+      return `<div class="pos-receipt-row"><span>${p.emoji} ${p.name} ×${STATE.cart[id]}</span><span style="font-weight:700;">Rp ${(p.price*STATE.cart[id]).toLocaleString('id')}</span></div>`;
+    }).join('')+`<div class="pos-receipt-row"><span>Biaya Layanan</span><span>Rp 500</span></div>`;
+
+    document.getElementById('psAmount').textContent='Rp '+total.toLocaleString('id');
+    document.getElementById('psMethod').textContent='via '+methodNames[STATE.payMethod];
+    document.getElementById('psReceipt').innerHTML=receipt+`<div class="pos-receipt-total"><span>TOTAL</span><span>Rp ${total.toLocaleString('id')}</span></div>`;
+    document.getElementById('posSuccess').classList.add('show');
+
+    // Update stats
+    STATE.completedCount++;
+    STATE.todayRevenue+=total;
+    document.getElementById('repRevenue').textContent='Rp '+(487000+STATE.todayRevenue).toLocaleString('id');
+    document.getElementById('repTx').textContent=38+STATE.completedCount;
+
+    // Add to orders
+    const orderId=`ORD-${String(44+STATE.completedCount).padStart(4,'0')}`;
+    STATE.orders.unshift({id:orderId,name:'Pelanggan Baru',items:Object.values(STATE.cart).map((qty,i)=>{const p=PRODUCTS.find(x=>x.id==Object.keys(STATE.cart)[i]);return `${p.emoji} ${p.name} ×${qty}`;}).join(', '),price:total,status:'done',time:new Date().toLocaleTimeString('id',{hour:'2-digit',minute:'2-digit',hour12:false}),method:methodNames[STATE.payMethod]});
+
+    this.toast('s','✅','Pembayaran Berhasil!','Rp '+total.toLocaleString('id')+' via '+methodNames[STATE.payMethod]);
+  },
+
+  newTransaction(){
+    STATE.cart={};
+    document.getElementById('posSuccess').classList.remove('show');
+    this.updateOrderPanel();
+    this.renderPOSGrid('',STATE.activeCat);
+    document.getElementById('cashInput').value='';
+    document.getElementById('changeDisplay').textContent='';
+    // New order ID
+    const id='ORD-'+new Date().toISOString().slice(0,10).replace(/-/g,'').slice(2)+'-'+String(Math.floor(Math.random()*9000)+1000);
+    document.getElementById('posOrdId').textContent=id;
+  },
+
+  printReceipt(){ this.toast('i','🖨','Mencetak...','Struk sedang dicetak ke Epson TM-T20III'); },
+
+  // ── ORDERS KANBAN ──
+  renderKanban(filter='all'){
+    const cols={
+      waiting:{label:'⏳ Menunggu',color:'#FEF3C7',textColor:'#92400E',items:[]},
+      cooking:{label:'🍳 Dimasak',color:'#FEF9C3',textColor:'#713F12',items:[]},
+      ready:{label:'📦 Siap Diambil',color:'#D1FAE5',textColor:'#065F46',items:[]},
+      done:{label:'✅ Selesai',color:'#F0FBF3',textColor:'var(--c-primary-700)',items:[]},
+    };
+    STATE.orders.forEach(o=>{if(cols[o.status])cols[o.status].items.push(o);});
+    const kanban=document.getElementById('orderKanban');
+    kanban.innerHTML=Object.entries(cols).map(([status,col])=>`
+      <div class="kanban-col">
+        <div class="kanban-col-header">
+          <div class="kanban-col-title">${col.label}</div>
+          <div class="kanban-col-count" style="background:${col.color};color:${col.textColor};">${col.items.length}</div>
+        </div>
+        ${col.items.map(o=>`
+          <div class="kanban-card" id="kc-${o.id}">
+            <div class="kanban-card-id">${o.id}</div>
+            <div class="kanban-card-name">${o.name}</div>
+            <div class="kanban-card-items">${o.items}</div>
+            <div class="kanban-card-footer">
+              <span class="kanban-card-price">Rp ${o.price.toLocaleString('id')}</span>
+              <span class="kanban-card-time">${o.time} · ${o.method}</span>
+            </div>
+            ${status==='waiting'?`<div class="kanban-card-actions"><button class="kanban-act primary" onclick="POS.advanceOrder('${o.id}','cooking')">🍳 Masak</button><button class="kanban-act danger" onclick="POS.cancelOrder('${o.id}')">Batal</button></div>`:''}
+            ${status==='cooking'?`<div class="kanban-card-actions"><button class="kanban-act primary" onclick="POS.advanceOrder('${o.id}','ready')">📦 Siap</button></div>`:''}
+            ${status==='ready'?`<div class="kanban-card-actions"><button class="kanban-act primary" onclick="POS.advanceOrder('${o.id}','done')">✓ Serahkan</button></div>`:''}
+          </div>
+        `).join('')}
+      </div>
+    `).join('');
+  },
+
+  advanceOrder(id,newStatus){
+    const o=STATE.orders.find(x=>x.id===id);
+    if(!o) return;
+    o.status=newStatus;
+    const statusLabels={cooking:'Dimasak 🍳',ready:'Siap Diambil 📦',done:'Selesai ✅'};
+    this.renderKanban();
+    this.toast('s','✅',`Order ${id}`,`Status diubah ke ${statusLabels[newStatus]}`);
+    // Update badge
+    const waiting=STATE.orders.filter(x=>x.status==='waiting'||x.status==='cooking').length;
+    document.getElementById('orderBadge').textContent=waiting;
+  },
+
+  cancelOrder(id){
+    this.showModal('danger','Batalkan Order?',`Order ${id} akan dibatalkan.`,()=>{
+      STATE.orders=STATE.orders.filter(x=>x.id!==id);
+      this.renderKanban();
+      this.toast('w','❌','Order Dibatalkan',`${id} telah dibatalkan`);
+    });
+  },
+
+  filterOrderTab(filter,btn){
+    document.querySelectorAll('.order-filter-tab').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    this.renderKanban(filter);
+  },
+
+  // ── MENU TABLE ──
+  renderMenuTable(){
+    const tbody=document.getElementById('menuTbody');
+    tbody.innerHTML=PRODUCTS.map((p,i)=>`
+      <tr>
+        <td><div style="display:flex;align-items:center;gap:8px;"><span style="font-size:20px;">${p.emoji}</span><div><div style="font-weight:700;">${p.name}</div></div></div></td>
+        <td><span class="badge badge-neutral">${p.cat}</span></td>
+        <td style="font-weight:700;">Rp ${p.price.toLocaleString('id')}</td>
+        <td style="${p.stock===0?'color:var(--c-red-500);font-weight:700;':p.stock<10?'color:var(--c-amber-600);font-weight:700;':''}">${p.stock===0?'Habis':p.stock}</td>
+        <td><button class="toggle ${p.active?'on':'off'}" onclick="POS.toggleMenu(${i},this)"></button></td>
+        <td>${p.sold} pcs</td>
+        <td style="display:flex;gap:4px;">
+          <button class="btn btn-sm btn-secondary" onclick="POS.editMenu(${i})">Edit</button>
+          <button class="btn btn-sm" style="background:var(--c-red-100);color:var(--c-red-500);border-color:var(--c-red-200);" onclick="POS.deleteMenu(${i})">Hapus</button>
+        </td>
+      </tr>`).join('');
+  },
+
+  toggleMenu(i,btn){
+    PRODUCTS[i].active=!PRODUCTS[i].active;
+    btn.classList.toggle('on'); btn.classList.toggle('off');
+    this.toast(PRODUCTS[i].active?'s':'w',PRODUCTS[i].active?'✅':'⏸',
+      PRODUCTS[i].active?'Menu Aktif':'Menu Nonaktif', PRODUCTS[i].name);
+  },
+
+  editMenu(i){
+    const p=PRODUCTS[i];
+    document.getElementById('menuFormPanel').style.display='block';
+    document.getElementById('menuFormTitle').textContent=`✏️ Edit: ${p.name}`;
+    document.getElementById('mfName').value=p.name;
+    document.getElementById('mfCat').value=p.cat;
+    document.getElementById('mfPrice').value=p.price;
+    document.getElementById('mfStock').value=p.stock;
+    document.getElementById('selectedEmoji').textContent=p.emoji;
+    STATE.selectedEmoji=p.emoji;
+  },
+
+  deleteMenu(i){
+    this.showModal('danger',`Hapus ${PRODUCTS[i].name}?`,'Menu ini akan dihapus dari daftar.',()=>{
+      const name=PRODUCTS[i].name;
+      PRODUCTS.splice(i,1);
+      this.renderMenuTable();
+      this.toast('i','🗑',`${name} Dihapus`,'Menu telah dihapus');
+    });
+  },
+
+  showAddMenuForm(){
+    document.getElementById('menuFormPanel').style.display='block';
+    document.getElementById('menuFormTitle').textContent='➕ Tambah Menu Baru';
+    document.getElementById('mfName').value='';
+    document.getElementById('mfPrice').value='';
+    document.getElementById('mfStock').value='';
+    document.getElementById('mfDesc').value='';
+  },
+
+  pickEmoji(btn,emoji){
+    document.querySelectorAll('.emoji-pick-btn').forEach(b=>b.classList.remove('sel'));
+    btn.classList.add('sel');
+    STATE.selectedEmoji=emoji;
+    document.getElementById('selectedEmoji').textContent=emoji;
+  },
+
+  saveMenu(){
+    const name=document.getElementById('mfName').value.trim();
+    const price=parseInt(document.getElementById('mfPrice').value)||0;
+    if(!name){this.toast('w','⚠️','Nama Wajib Diisi','');return;}
+    if(price===0){this.toast('w','⚠️','Harga Wajib Diisi','');return;}
+    PRODUCTS.push({id:Date.now(),name,price,emoji:STATE.selectedEmoji,cat:document.getElementById('mfCat').value,stock:parseInt(document.getElementById('mfStock').value)||50,sold:0,active:true});
+    document.getElementById('menuFormPanel').style.display='none';
+    this.renderMenuTable();
+    this.toast('s','✅','Menu Tersimpan!',`${name} berhasil ditambahkan`);
+  },
+
+  // ── SETTINGS ──
+  saveSettings(){
+    const name=document.getElementById('stSettName').value;
+    this.toast('s','💾','Pengaturan Disimpan',`Toko "${name}" berhasil diperbarui`);
+  },
+
+  togglePPN(btn){
+    STATE.ppnEnabled=btn.classList.contains('on');
+    this.toast('i','💰','PPN '+(STATE.ppnEnabled?'Aktif':'Nonaktif'),STATE.ppnEnabled?'PPN 11% ditambahkan ke transaksi':'PPN dinonaktifkan');
+    this.updateOrderPanel();
+  },
+
+  // ── LIVE CLOCK ──
+  startClock(){
+    const update=()=>{
+      const t=new Date().toLocaleTimeString('id',{hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false});
+      const el=document.getElementById('liveClockBadge');
+      if(el) el.textContent=t;
+    };
+    update(); setInterval(update,1000);
+  }
+};
+
+// ── INIT ──
+POS.renderPOSGrid();
+POS.startClock();
+POS.renderMenuTable();
+</script>
+</body>
+</html>

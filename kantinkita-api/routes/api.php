@@ -7,6 +7,7 @@ use App\Http\Controllers\Api\PaymentController;
 use App\Http\Controllers\Api\Customer\CartController;
 use App\Http\Controllers\Api\Customer\CheckoutController;
 use App\Http\Controllers\Api\Customer\OrderController as CustomerOrderController;
+use App\Http\Controllers\Api\Customer\FavoriteController;
 use App\Http\Controllers\Api\Staff\OrderController as StaffOrderController;
 use App\Http\Controllers\Api\Staff\MenuController;
 use App\Http\Controllers\Api\Owner\ReportController;
@@ -44,12 +45,14 @@ Route::get('/tenants',            [TenantController::class, 'index']);
 Route::get('/tenants/{id}',       [TenantController::class, 'show']);
 Route::get('/tenants/{id}/menus', [TenantController::class, 'menus']);
 
-Route::post('/payment/notification', [PaymentController::class, 'notification']);
+Route::middleware(['throttle:10,1'])->group(function () {
+    Route::post('/payment/notification', [PaymentController::class, 'notification']);
+});
 
 // ═══════════════════════════
 // AUTHENTICATED ROUTES
 // ═══════════════════════════
-Route::middleware(['auth:sanctum'])->group(function () {
+Route::middleware(['auth:sanctum', 'throttle:120,1'])->group(function () {
 
     Route::post('/auth/logout',         [AuthController::class, 'logout']);
     Route::get('/auth/me',              [AuthController::class, 'me']);
@@ -73,11 +76,19 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::post('/checkout',     [CheckoutController::class, 'checkout']);
         Route::get('/orders',        [CustomerOrderController::class, 'index']);
         Route::get('/orders/{id}',   [CustomerOrderController::class, 'show']);
+
+        // Favorites
+        Route::get('/favorites',          [FavoriteController::class, 'index']);
+        Route::post('/favorites/{menuId}/toggle', [FavoriteController::class, 'toggle']);
+        Route::post('/favorites/check',   [FavoriteController::class, 'check']);
     });
 
     // ─── STAFF ──────────────────────────────────────
-    Route::middleware(['role:staff', 'tenant.active'])->prefix('staff')->group(function () {
+    Route::middleware(['role:staff', 'tenant.active', 'subscription.check'])->prefix('staff')->group(function () {
         Route::get('/orders',                         [StaffOrderController::class, 'index'])->middleware('permission:read-pesanan');
+        Route::get('/orders/summary',                 [StaffOrderController::class, 'summary'])->middleware('permission:read-pesanan');
+        Route::post('/orders',                        [StaffOrderController::class, 'store'])->middleware('permission:create-pesanan');
+        Route::post('/orders/bulk-status',            [StaffOrderController::class, 'bulkUpdateStatus'])->middleware('permission:update-pesanan');
         Route::put('/orders/{id}/status',             [StaffOrderController::class, 'updateStatus'])->middleware('permission:update-pesanan');
         Route::get('/menus',                          [MenuController::class, 'index'])->middleware('permission:read-menu');
         Route::post('/menus',                         [MenuController::class, 'store'])->middleware('permission:create-menu');
@@ -88,13 +99,19 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::post('/categories',                    [MenuController::class, 'storeCategory'])->middleware('permission:create-menu');
         Route::put('/categories/{id}',                [MenuController::class, 'updateCategory'])->middleware('permission:update-menu');
         Route::delete('/categories/{id}',             [MenuController::class, 'destroyCategory'])->middleware('permission:delete-menu');
+        
+        // Expose staff list and reports to staff role
+        Route::get('/staff',                          [StaffController::class, 'index']);
+        Route::get('/reports',                        [ReportController::class, 'index']);
     });
 
     // ─── OWNER ──────────────────────────────────────
-    Route::middleware(['role:owner', 'tenant.active'])->prefix('owner')->group(function () {
-        Route::get('/reports',            [ReportController::class, 'index'])->middleware('permission:read-laporan');
-        Route::get('/reports/export/pdf', [ReportController::class, 'exportPdf'])->middleware('permission:read-laporan');
-        Route::get('/reports/export/csv', [ReportController::class, 'exportCsv'])->middleware('permission:read-laporan');
+    Route::middleware(['role:owner', 'tenant.active', 'subscription.check'])->prefix('owner')->group(function () {
+        Route::get('/reports',                [ReportController::class, 'index'])->middleware('permission:read-laporan');
+        Route::get('/reports/aggregate',      [ReportController::class, 'aggregate'])->middleware('permission:read-laporan');
+        Route::get('/reports/export/pdf',     [ReportController::class, 'exportPdf'])->middleware('permission:read-laporan');
+        Route::get('/reports/export/csv',     [ReportController::class, 'exportCsv'])->middleware('permission:read-laporan');
+        Route::get('/finance/summary',   [ReportController::class, 'finance'])->middleware('permission:read-laporan');
         Route::get('/orders',            [OwnerOrderController::class, 'index'])->middleware('permission:read-pesanan');
         Route::post('/refund',           [RefundController::class, 'process'])->middleware('permission:update-pesanan');
         Route::get('/refund/history',    [RefundController::class, 'history'])->middleware('permission:read-pesanan');

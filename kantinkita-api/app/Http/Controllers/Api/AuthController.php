@@ -75,7 +75,7 @@ class AuthController extends Controller
             'phone'        => $request->phone,
             'password'          => Hash::make($request->password),
             'role'              => 'customer',
-            'company_code'      => 'UNIV',
+            'company_code'      => $request->company_code ?? 'UNIV',
             'created_by'        => $request->username,
             'updated_by'        => $request->username,
             'status'            => 1,
@@ -130,13 +130,14 @@ class AuthController extends Controller
         $request->validate([
             'full_name'   => 'required|string|max:200',
             'phone'       => 'nullable|string|max:20',
+            'dob'         => 'nullable|date',
             'email_notif' => 'nullable|boolean',
             'wa_notif'    => 'nullable|boolean',
             'photo'       => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
         ]);
 
         $user = $request->user();
-        $data = $request->only(['full_name', 'phone', 'email_notif', 'wa_notif']);
+        $data = $request->only(['full_name', 'phone', 'dob', 'email_notif', 'wa_notif']);
 
         if ($request->hasFile('photo')) {
             // Delete old photo if exists and is a local file (not a URL)
@@ -164,56 +165,74 @@ class AuthController extends Controller
             'username'    => 'required|string|max:100|unique:users,username,' . $user->id,
             'full_name'   => 'required|string|max:200',
             'email'       => 'required|email|max:255|unique:users,email,' . $user->id,
-            'no_ktp'      => 'nullable|string|max:50',
+            'no_ktp'      => 'required|string|max:50|min:16',
             'phone'       => 'nullable|string|max:20',
             'dob'         => 'nullable|date',
             'role'        => 'required|in:customer,owner',
             'tenant_name' => 'required_if:role,owner|string|max:200',
-            'password'    => 'required|string|min:8|confirmed',
+            'password'    => 'nullable|string|min:8|confirmed',
         ]);
 
         $companyCode = 'UNIV';
         $tenant = null;
-        if ($request->role === 'owner') {
-            $companyCode = $this->generateCompanyCode($request->tenant_name);
-            
-            // Calculate trial period from system settings
-            $trialDays = (int) \App\Models\SystemSetting::get('trial_days', 30);
 
-            // Create tenant with trial
-            $tenant = Tenant::create([
-                'user_id'       => $user->id,
-                'tenant_name'   => $request->tenant_name,
-                'slug'          => Str::slug($request->tenant_name) . '-' . time(),
-                'company_code'  => $companyCode,
-                'status'        => 1,
-                'trial_ends_at' => now()->addDays($trialDays)->toDateString(),
-            ]);
-        }
+        DB::transaction(function () use ($request, $user, &$companyCode, &$tenant) {
+            if ($request->role === 'owner') {
+                $companyCode = $this->generateCompanyCode($request->tenant_name);
 
-        $user->update([
-            'username'          => $request->username,
-            'full_name'         => $request->full_name,
-            'name'              => $request->full_name,
-            'email'             => $request->email,
-            'no_ktp'            => $request->no_ktp,
-            'phone'             => $request->phone,
-            'dob'               => $request->dob,
-            'role'              => $request->role,
-            'password'          => Hash::make($request->password),
-            'company_code'      => $companyCode,
-            'profile_completed' => true,
-        ]);
+                // New tenants get a 2-day free trial automatically
+                $tenant = Tenant::create([
+                    'user_id'       => $user->id,
+                    'tenant_name'   => $request->tenant_name,
+                    'slug'          => Str::slug($request->tenant_name) . '-' . time(),
+                    'company_code'  => $companyCode,
+                    'status'        => 1,
+                    'is_deleted'    => 0,
+                    'trial_ends_at' => now()->addDays(2),
+                ]);
+
+                Log::info("setupProfile: Tenant created", [
+                    'tenant_id' => $tenant->id,
+                    'user_id'   => $user->id,
+                    'tenant_name' => $tenant->tenant_name,
+                ]);
+            }
+
+            $updateData = [
+                'username'          => $request->username,
+                'full_name'         => $request->full_name,
+                'name'              => $request->full_name,
+                'email'             => $request->email,
+                'no_ktp'            => $request->no_ktp,
+                'phone'             => $request->phone,
+                'dob'               => $request->dob,
+                'role'              => $request->role,
+                'company_code'      => $companyCode,
+                'profile_completed' => true,
+            ];
+
+            // Only update password if provided (Google users need to set one, regular users can skip)
+            if ($request->filled('password')) {
+                $updateData['password'] = Hash::make($request->password);
+            }
+
+            $user->update($updateData);
+        });
 
         ActivityLog::record('update', 'Setup profil berhasil');
 
-        $freshUser = $user->fresh();
+        // Reload user with all relationships (same as login response)
+        $freshUser = User::where('id', $user->id)
+            ->with(['tenant', 'assignedRole'])
+            ->first();
+
+        $freshUser->computed_permissions = $freshUser->getAllPermissions()->pluck('slug');
 
         // For owner: send company code email
-        if ($request->role === 'owner' && $tenant) {
+        if ($request->role === 'owner' && $freshUser->tenant) {
             try {
                 Mail::to($freshUser->email)->send(
-                    new \App\Mail\TenantRegisteredMail($freshUser, $tenant, $companyCode)
+                    new \App\Mail\TenantRegisteredMail($freshUser, $freshUser->tenant, $companyCode)
                 );
             } catch (\Exception $e) {
                 Log::warning('Failed to send tenant registration email: ' . $e->getMessage());
@@ -221,15 +240,12 @@ class AuthController extends Controller
         }
 
         $responseData = $freshUser->toArray();
-        if ($request->role === 'owner' && $tenant) {
-            $responseData['company_code'] = $companyCode;
-            $responseData['tenant'] = $tenant;
-        }
+        $responseData['company_code'] = $companyCode;
 
         return $this->success($responseData, 'Setup profil berhasil disimpan');
     }
 
-    private function generateCompanyCode($tenantName)
+    private function generateCompanyCode(string $tenantName): string
     {
         $words = explode(' ', trim($tenantName));
         $code = '';
@@ -329,8 +345,10 @@ class AuthController extends Controller
                 ]);
             }
 
+            $frontend = config('app.frontend_url', 'http://localhost:5173');
+            
             if (!$user->status) {
-                return redirect('http://localhost:5173/login?error=Akun+dinonaktifkan');
+                return redirect($frontend . '/login?error=Akun+dinonaktifkan');
             }
 
             // ── 2FA OTP Logic ─────────────────────────────
@@ -355,11 +373,11 @@ class AuthController extends Controller
             ActivityLog::record('login_attempt', "OTP dikirim ke: {$user->email}", $user->id);
 
             // Redirect ke halaman verifikasi OTP di frontend
-            return redirect("http://localhost:5173/auth/otp?email=" . urlencode($user->email) . "&intent=" . $intentKey);
+            return redirect($frontend . '/auth/otp?email=' . urlencode($user->email) . '&intent=' . $intentKey);
 
         } catch (\Exception $e) {
             Log::error('Google Login Error: ' . $e->getMessage());
-            return redirect('http://localhost:5173/login?error=Otentikasi+Google+Gagal');
+            return redirect($frontend . '/login?error=Otentikasi+Google+Gagal');
         }
     }
 

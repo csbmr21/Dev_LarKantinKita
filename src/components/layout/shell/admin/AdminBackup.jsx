@@ -1,6 +1,17 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { reportApi } from '../../../../api/report';
+import { adminApi } from '../../../../api/admin';
+import toast from 'react-hot-toast';
+import { 
+  CircleStackIcon, 
+  ArrowPathIcon, 
+  TrashIcon, 
+  ArrowDownTrayIcon, 
+  ClockIcon, 
+  Cog6ToothIcon, 
+  ExclamationTriangleIcon,
+  PlayIcon
+} from '@heroicons/react/24/outline';
 
 const unwrapList = (r) => {
   const d = r?.data;
@@ -14,23 +25,30 @@ export default function AdminBackup() {
   const qc = useQueryClient();
   const [toggles, setToggles] = useState({ daily: true, incremental: true });
   const [modal, setModal] = useState(null); // { type: 'detail'|'restore', backup: obj }
+  const [restoreTarget, setRestoreTarget] = useState('');
   const toggle = (k) => setToggles(t => ({ ...t, [k]: !t[k] }));
 
   const { data: raw, isLoading } = useQuery({
     queryKey: ['admin-backups'],
-    queryFn: () => reportApi.getBackups().catch(() => []),
+    queryFn: () => adminApi.getBackups().catch(() => []),
   });
 
   const backups = unwrapList(raw);
 
   const createMut = useMutation({
-    mutationFn: () => reportApi.createBackup(),
+    mutationFn: () => adminApi.createBackup(),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['admin-backups'] }),
   });
 
   const deleteMut = useMutation({
-    mutationFn: (filename) => reportApi.deleteBackup(filename),
+    mutationFn: (filename) => adminApi.deleteBackup(filename),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['admin-backups'] }),
+  });
+
+  const restoreMut = useMutation({
+    mutationFn: (filename) => adminApi.restoreBackup(filename),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['admin-backups'] }); setModal(null); toast.success('Restore database berhasil diproses'); },
+    onError: () => toast.error('Gagal melakukan restore database'),
   });
 
   const formatSize = (bytes) => {
@@ -100,7 +118,9 @@ export default function AdminBackup() {
               </div>
               <div className="kk-modal-btns">
                 <button className="btn-cancel" onClick={() => setModal(null)}>Batal</button>
-                <button className="btn-confirm danger" onClick={() => { alert('Restore in progress (simulated)...'); setModal(null); }}>Ya, Restore Sekarang</button>
+                <button className="btn-confirm danger" disabled={restoreMut.isPending} onClick={() => restoreMut.mutate(modal.backup.filename)}>
+                  {restoreMut.isPending ? '⏳ Restoring...' : 'Ya, Restore Sekarang'}
+                </button>
               </div>
             </div>
           )}
@@ -108,11 +128,15 @@ export default function AdminBackup() {
       )}
 
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-        <div style={{ fontSize: 16, fontWeight: 800, color: 'var(--text-100)' }}>Backup & Restore</div>
+        <div style={{ fontSize: 16, fontWeight: 800, color: 'var(--text-100)', display: 'flex', alignItems: 'center', gap: 8 }}>
+          <CircleStackIcon className="w-5 h-5" /> Backup & Restore
+        </div>
         <div style={{ display: 'flex', gap: 6 }}>
-          <button className="btn btn-ghost btn-sm">📅 Jadwal</button>
-          <button className="btn btn-primary" onClick={() => createMut.mutate()} disabled={createMut.isPending}>
-            {createMut.isPending ? '⏳ Running...' : '▶ Run Now'}
+          <button className="btn btn-ghost btn-sm" style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+            <ClockIcon className="w-4 h-4" /> Jadwal
+          </button>
+          <button className="btn btn-primary" style={{ display: 'flex', alignItems: 'center', gap: 4 }} onClick={() => createMut.mutate()} disabled={createMut.isPending}>
+            {createMut.isPending ? '⏳ Running...' : <><PlayIcon className="w-4 h-4" /> Run Now</>}
           </button>
         </div>
       </div>
@@ -121,7 +145,7 @@ export default function AdminBackup() {
         {/* Backup list */}
         <div className="panel" style={{ marginBottom: 0 }}>
           <div className="panel-header">
-            <div className="panel-title">💾 Riwayat Backup ({displayBackups.length})</div>
+            <div className="panel-title" style={{ display: 'flex', alignItems: 'center', gap: 8 }}><CircleStackIcon className="w-4 h-4" /> Riwayat Backup ({displayBackups.length})</div>
             {isLoading && <span style={{ fontSize: 11, color: 'var(--text-400)' }}>Memuat...</span>}
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 8, padding: 12 }}>
@@ -150,7 +174,7 @@ export default function AdminBackup() {
 
         {/* Config */}
         <div className="panel" style={{ marginBottom: 0 }}>
-          <div className="panel-header"><div className="panel-title">⚙️ Backup Configuration</div></div>
+          <div className="panel-header"><div className="panel-title" style={{ display: 'flex', alignItems: 'center', gap: 8 }}><Cog6ToothIcon className="w-4 h-4" /> Backup Configuration</div></div>
           <div className="panel-body" style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <div>
@@ -186,20 +210,23 @@ export default function AdminBackup() {
 
       {/* Restore */}
       <div className="panel" style={{ marginTop: 12, marginBottom: 0 }}>
-        <div className="panel-header"><div className="panel-title">🔄 Restore Database</div></div>
+        <div className="panel-header"><div className="panel-title" style={{ display: 'flex', alignItems: 'center', gap: 8 }}><ArrowPathIcon className="w-4 h-4" /> Restore Database</div></div>
         <div className="panel-body">
           <div style={{ background: 'rgba(239,68,68,.06)', border: '1px solid rgba(239,68,68,.15)', borderRadius: 'var(--r-md)', padding: 12, marginBottom: 12 }}>
-            <div style={{ fontSize: 12, fontWeight: 700, color: '#FCA5A5', marginBottom: 4 }}>⚠️ PERHATIAN</div>
+            <div style={{ fontSize: 12, fontWeight: 700, color: '#FCA5A5', marginBottom: 4 }}><ExclamationTriangleIcon className="w-4 h-4 inline mr-1" /> PERHATIAN</div>
             <div style={{ fontSize: 11, color: 'var(--text-300)' }}>Restore akan menimpa SEMUA data produksi. Proses ini tidak bisa dibatalkan.</div>
           </div>
           <div style={{ display: 'flex', gap: 8 }}>
-            <select className="input" style={{ flex: 1 }}>
-              <option>Pilih backup untuk restore...</option>
+            <select className="input" style={{ flex: 1 }} value={restoreTarget} onChange={e => setRestoreTarget(e.target.value)}>
+              <option value="">Pilih backup untuk restore...</option>
               {displayBackups.filter(b => isFullBackup(b)).map((b, i) => (
-                <option key={i}>✓ FULL — {formatDate(b.created_at)} ({(b.size / 1e9).toFixed(1)} GB)</option>
+                <option key={i} value={b.filename}>✓ FULL — {formatDate(b.created_at)} ({(b.size / 1e9).toFixed(1)} GB)</option>
               ))}
             </select>
-            <button className="btn btn-danger-outline">🔄 Restore</button>
+            <button className="btn btn-danger-outline" disabled={!restoreTarget} onClick={() => {
+              const backup = displayBackups.find(b => b.filename === restoreTarget);
+              if (backup) setModal({ type: 'restore', backup });
+            }}>🔄 Restore</button>
           </div>
         </div>
       </div>

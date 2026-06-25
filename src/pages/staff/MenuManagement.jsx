@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { 
   PlusIcon, PencilIcon, TrashIcon, PhotoIcon, 
-  CheckIcon, XMarkIcon, TagIcon 
+  CheckIcon, XMarkIcon, TagIcon, ShoppingBagIcon
 } from '@heroicons/react/24/outline';
 import { tenantApi } from '../../api/tenant';
 import Button from '../../components/ui/Button';
@@ -108,7 +108,19 @@ export default function MenuManagement() {
 
   // --- Handlers ---
   const openAdd  = () => { setEditing(null); setForm(EMPTY_FORM); setErrors({}); setPhotoPreview(null); setModal(true); };
-  const openEdit = (m) => { setEditing(m); setForm({ name: m.name, description: m.description ?? '', price: String(m.price), category_id: m.category_id, is_available: !!m.is_available }); setErrors({}); setPhotoPreview(m.photo_url); setModal(true); };
+  const openEdit = (m) => { 
+    setEditing(m); 
+    setForm({ 
+      name: m.name || '', 
+      description: m.description || '', 
+      price: String(m.price || ''), 
+      category_id: m.category_id || '', 
+      is_available: m.is_available === undefined ? true : !!m.is_available 
+    }); 
+    setErrors({}); 
+    setPhotoPreview(m.photo_url); 
+    setModal(true); 
+  };
   const closeModal = () => { setModal(false); setEditing(null); setErrors({}); setPhotoPreview(null); setIsAddingCat(false); };
 
   const handleQuickAddCat = (e) => {
@@ -194,7 +206,12 @@ export default function MenuManagement() {
           {[...Array(6)].map((_, i) => <SkeletonCard key={i} />)}
         </div>
       ) : menus.length === 0 ? (
-        <EmptyState icon="🍱" title="Belum ada menu" actionLabel="Tambah Menu" onAction={openAdd} />
+        <EmptyState 
+          icon={<ShoppingBagIcon className="w-12 h-12 text-gray-300" />} 
+          title="Belum ada menu" 
+          actionLabel="Tambah Menu" 
+          onAction={openAdd} 
+        />
       ) : (
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
           {menus.map((menu) => (

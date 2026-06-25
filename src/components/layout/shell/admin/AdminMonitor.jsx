@@ -1,6 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { reportApi } from '../../../../api/report';
+import { adminApi } from '../../../../api/admin';
+import toast from 'react-hot-toast';
+import { 
+  ExclamationTriangleIcon, 
+  BoltIcon, 
+  ChartBarIcon, 
+  SignalIcon, 
+  CpuChipIcon, 
+  CircleStackIcon,
+  CheckCircleIcon,
+  ExclamationCircleIcon
+} from '@heroicons/react/24/outline';
 
 const unwrapList = (r) => {
   const d = r?.data;
@@ -38,12 +49,12 @@ export default function AdminMonitor() {
 
   const { data: errRaw, isLoading } = useQuery({
     queryKey: ['admin-errors'],
-    queryFn: () => reportApi.getErrorLogs().catch(() => []),
-    refetchInterval: 20000,
+    queryFn: () => adminApi.getErrorLogs().catch(() => []),
+    refetchInterval: 5000,
   });
   const { data: statsRaw } = useQuery({
     queryKey: ['admin-error-stats'],
-    queryFn: () => reportApi.getErrorLogs({ path: '/stats' }).catch(() => ({})),
+    queryFn: () => adminApi.getErrorStats().catch(() => ({})),
   });
 
   const errors = unwrapList(errRaw);
@@ -51,7 +62,7 @@ export default function AdminMonitor() {
   const warnCount = errors.filter(e => ERR_TYPE(e.level) === 'warn' && !e.resolved_at).length;
 
   const resolveMut = useMutation({
-    mutationFn: (id) => reportApi.resolveError(id),
+    mutationFn: (id) => adminApi.resolveError(id),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['admin-errors'] }),
   });
 
@@ -113,16 +124,26 @@ export default function AdminMonitor() {
       <div className="g2">
         <div className="panel" style={{ marginBottom: 0 }}>
           <div className="panel-header">
-            <div className="panel-title">🚨 Active Errors & Warnings</div>
+            <div className="panel-title" style={{ display: 'flex', alignItems: 'center', gap: 8 }}><ExclamationCircleIcon className="w-4 h-4" /> Active Errors & Warnings</div>
             <button className="btn btn-ghost btn-sm"
-              onClick={() => errors.filter(e => !e.resolved_at).forEach(e => resolveMut.mutate(e.id))}>
+              disabled={resolveMut.isPending}
+              onClick={async () => {
+                const unresolved = errors.filter(e => !e.resolved_at);
+                for (const e of unresolved) {
+                  await adminApi.resolveError(e.id).catch(() => {});
+                }
+                qc.invalidateQueries({ queryKey: ['admin-errors'] });
+                toast.success(`${unresolved.length} error ditandai selesai`);
+              }}>
               Resolve All
             </button>
           </div>
           <div>
             {isLoading && <div style={{ padding: 24, textAlign: 'center', color: 'var(--text-400)' }}>Memuat...</div>}
             {!isLoading && activeErrors.length === 0 && (
-              <div style={{ padding: 24, textAlign: 'center', color: 'var(--c-primary-400)', fontSize: 12 }}>✓ Semua sistem normal</div>
+              <div style={{ padding: 24, textAlign: 'center', color: 'var(--c-primary-400)', fontSize: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+                <CheckCircleIcon className="w-4 h-4" /> Semua sistem normal
+              </div>
             )}
             {activeErrors.map(e => {
               const type = ERR_TYPE(e.level);
@@ -145,15 +166,12 @@ export default function AdminMonitor() {
         </div>
 
         <div className="panel" style={{ marginBottom: 0 }}>
-          <div className="panel-header"><div className="panel-title">📊 System Metrics Live</div></div>
+          <div className="panel-header"><div className="panel-title" style={{ display: 'flex', alignItems: 'center', gap: 8 }}><ChartBarIcon className="w-4 h-4" /> System Metrics Live</div></div>
           <div>
-            <div className="metric-row"><span className="metric-name">API Latency</span><span className="metric-val up">{liveMetrics.latency}ms</span></div>
-            <div className="metric-row"><span className="metric-name">DB Pool Usage</span><span className="metric-val" style={{ color: '#FCD34D' }}>{liveMetrics.db}%</span></div>
-            <div className="metric-row"><span className="metric-name">Memory</span><span className="metric-val up">4.2 / 16 GB</span></div>
-            <div className="metric-row"><span className="metric-name">CPU Usage</span><span className="metric-val up">{liveMetrics.cpu}%</span></div>
-            <div className="metric-row"><span className="metric-name">Storage</span><span className="metric-val up">234 / 1024 GB</span></div>
-            <div className="metric-row"><span className="metric-name">Active Connections</span><span className="metric-val up">{liveMetrics.conn}</span></div>
-            <div className="metric-row"><span className="metric-name">Total Errors (DB)</span><span className="metric-val" style={{ color: errors.length > 0 ? '#FCA5A5' : 'var(--c-primary-400)' }}>{errors.length}</span></div>
+            <div className="metric-row"><span className="metric-name" style={{ display: 'flex', alignItems: 'center', gap: 6 }}><BoltIcon className="w-3 h-3" /> API Latency</span><span className="metric-val up">{liveMetrics.latency}ms</span></div>
+            <div className="metric-row"><span className="metric-name" style={{ display: 'flex', alignItems: 'center', gap: 6 }}><CircleStackIcon className="w-3 h-3" /> DB Pool Usage</span><span className="metric-val" style={{ color: '#FCD34D' }}>{liveMetrics.db}%</span></div>
+            <div className="metric-row"><span className="metric-name" style={{ display: 'flex', alignItems: 'center', gap: 6 }}><CpuChipIcon className="w-3 h-3" /> CPU Usage</span><span className="metric-val up">{liveMetrics.cpu}%</span></div>
+            <div className="metric-row"><span className="metric-name" style={{ display: 'flex', alignItems: 'center', gap: 6 }}><SignalIcon className="w-3 h-3" /> Active Connections</span><span className="metric-val up">{liveMetrics.conn}</span></div>
           </div>
         </div>
       </div>

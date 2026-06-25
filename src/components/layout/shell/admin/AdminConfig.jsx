@@ -1,6 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
-import { reportApi } from '../../../../api/report';
+import { adminApi } from '../../../../api/admin';
+import { 
+  Cog6ToothIcon, 
+  EnvelopeIcon, 
+  CreditCardIcon, 
+  ShieldCheckIcon,
+  CheckCircleIcon,
+  ExclamationTriangleIcon,
+  CircleStackIcon
+} from '@heroicons/react/24/outline';
 
 const unwrapList = (r) => {
   const d = r?.data;
@@ -19,7 +28,7 @@ const toObj = (arr) => {
 export default function AdminConfig() {
   const { data: raw } = useQuery({
     queryKey: ['admin-settings'],
-    queryFn: () => reportApi.getSettings().catch(() => []),
+    queryFn: () => adminApi.getSettings().catch(() => []),
   });
 
   const settingsArr = unwrapList(raw);
@@ -51,18 +60,28 @@ export default function AdminConfig() {
         ddos: settings.ddos_protection !== '0',
       }));
     }
-  }, [settingsArr.length]);
+  }, [JSON.stringify(settings)]);
 
   const saveMut = useMutation({
-    mutationFn: () => reportApi.updateSettings({
-      platform_fee: form.platform_fee,
-      smtp_host: form.smtp_host,
-      from_email: form.from_email,
-      maintenance_mode: toggles.maintenance ? '1' : '0',
-      allow_registration: toggles.registration ? '1' : '0',
-      email_confirmation: toggles.email_confirm ? '1' : '0',
-      session_timeout: form.session_timeout,
-    }),
+    mutationFn: () => {
+      const payload = {
+        settings: [
+          { key: 'platform_fee', value: form.platform_fee },
+          { key: 'smtp_host', value: form.smtp_host },
+          { key: 'from_email', value: form.from_email },
+          { key: 'maintenance_mode', value: toggles.maintenance ? '1' : '0' },
+          { key: 'allow_registration', value: toggles.registration ? '1' : '0' },
+          { key: 'email_confirmation', value: toggles.email_confirm ? '1' : '0' },
+          { key: 'session_timeout', value: form.session_timeout },
+          { key: 'midtrans_merchant_id', value: form.merchant_id },
+          { key: 'email_daily_report', value: toggles.email_report ? '1' : '0' },
+          { key: 'admin_2fa', value: toggles.two_fa ? '1' : '0' },
+          { key: 'rate_limiting', value: toggles.rate_limit ? '1' : '0' },
+          { key: 'ddos_protection', value: toggles.ddos ? '1' : '0' },
+        ]
+      };
+      return adminApi.updateSettings(payload);
+    },
   });
 
   const tog = (k) => setToggles(t => ({ ...t, [k]: !t[k] }));
@@ -74,7 +93,7 @@ export default function AdminConfig() {
       <div className="g2">
         <div>
           <div className="panel">
-            <div className="panel-header"><div className="panel-title">⚙️ Platform Settings</div></div>
+            <div className="panel-header"><div className="panel-title" style={{ display: 'flex', alignItems: 'center', gap: 8 }}><Cog6ToothIcon className="w-4 h-4" /> Platform Settings</div></div>
             <div className="panel-body" style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
               <div className="fg" style={{ marginBottom: 0 }}>
                 <label className="lbl">Platform Fee (%)</label>
@@ -103,13 +122,13 @@ export default function AdminConfig() {
                 <button className={`toggle ${toggles.registration ? 'on' : 'off'}`} onClick={() => tog('registration')} />
               </div>
               <button className="btn btn-primary" onClick={() => saveMut.mutate()} disabled={saveMut.isPending}>
-                {saveMut.isPending ? '⏳ Menyimpan...' : saveMut.isSuccess ? '✓ Tersimpan' : '💾 Simpan'}
+                {saveMut.isPending ? '⏳ Menyimpan...' : saveMut.isSuccess ? <><CheckCircleIcon className="w-4 h-4 inline mr-1" /> Tersimpan</> : <><CircleStackIcon className="w-4 h-4 inline mr-1" /> Simpan</>}
               </button>
             </div>
           </div>
 
           <div className="panel" style={{ marginBottom: 0 }}>
-            <div className="panel-header"><div className="panel-title">📧 Email & Notifikasi</div></div>
+            <div className="panel-header"><div className="panel-title" style={{ display: 'flex', alignItems: 'center', gap: 8 }}><EnvelopeIcon className="w-4 h-4" /> Email & Notifikasi</div></div>
             <div className="panel-body" style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
               <div className="fg" style={{ marginBottom: 0 }}>
                 <label className="lbl">SMTP Host</label>
@@ -133,7 +152,7 @@ export default function AdminConfig() {
 
         <div>
           <div className="panel">
-            <div className="panel-header"><div className="panel-title">💳 Payment Gateway Config</div></div>
+            <div className="panel-header"><div className="panel-title" style={{ display: 'flex', alignItems: 'center', gap: 8 }}><CreditCardIcon className="w-4 h-4" /> Payment Gateway Config</div></div>
             <div className="panel-body" style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
               <div className="fg" style={{ marginBottom: 0 }}>
                 <label className="lbl">Provider</label>
@@ -149,13 +168,13 @@ export default function AdminConfig() {
               </div>
               <div className="metric-row" style={{ padding: 0, marginTop: 4 }}>
                 <span className="metric-name">Status Payment Gateway</span>
-                <span className="metric-val" style={{ color: '#FCD34D' }}>Degraded ⚠️</span>
+                <span className="metric-val" style={{ color: '#FCD34D', display: 'flex', alignItems: 'center', gap: 4 }}>Degraded <ExclamationTriangleIcon className="w-3 h-3" /></span>
               </div>
             </div>
           </div>
 
           <div className="panel" style={{ marginBottom: 0 }}>
-            <div className="panel-header"><div className="panel-title">🔐 Security Settings</div></div>
+            <div className="panel-header"><div className="panel-title" style={{ display: 'flex', alignItems: 'center', gap: 8 }}><ShieldCheckIcon className="w-4 h-4" /> Security Settings</div></div>
             <div className="panel-body" style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                 <div><div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-100)' }}>Two-Factor Auth (Admin)</div></div>

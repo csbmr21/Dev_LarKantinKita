@@ -1,7 +1,9 @@
 import React from 'react';
 import clsx from 'clsx';
 import { MinusIcon, PlusIcon } from '@heroicons/react/24/solid';
+import toast from 'react-hot-toast';
 import { useCartStore } from '../../store/cartStore';
+import { cartApi } from '../../api/cart';
 import { formatCurrency } from '../../utils/formatCurrency';
 import Badge from '../ui/Badge';
 
@@ -12,16 +14,23 @@ export default function MenuCard({ menu, tenantId, tenantName, className }) {
   const cartItem = items.find((i) => i.menuId === menu.id);
   const qty = cartItem?.quantity ?? 0;
 
-  const handleAdd = () => {
-    addItem({
-      menuId: menu.id,
-      name: menu.name,
-      price: menu.price,
-      photo: menu.photo,
-      tenantId,
-      tenantName,
-      quantity: 1,
-    });
+  const handleAdd = async () => {
+    try {
+      const response = await cartApi.addItem(menu.id, 1);
+      const cartItemId = response.data.data?.id ?? null;
+      addItem({
+        menuId: menu.id,
+        cartItemId,
+        name: menu.name,
+        price: menu.price,
+        photo: menu.photo,
+        tenantId,
+        tenantName,
+        quantity: 1,
+      });
+    } catch (err) {
+      toast.error(err.response?.data?.message ?? 'Gagal menambah ke keranjang');
+    }
   };
 
   const handleDecrease = () => updateQuantity(menu.id, qty - 1);

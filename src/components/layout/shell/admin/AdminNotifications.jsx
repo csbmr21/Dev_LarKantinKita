@@ -1,8 +1,21 @@
 import React, { useState } from 'react';
+import toast from 'react-hot-toast';
+import { 
+  MegaphoneIcon, 
+  InformationCircleIcon, 
+  ExclamationTriangleIcon, 
+  FireIcon, 
+  WrenchIcon,
+  ClockIcon,
+  ListBulletIcon
+} from '@heroicons/react/24/outline';
 
 export default function AdminNotifications() {
   const [type, setType] = useState('info');
   const [modal, setModal] = useState(null); // { type: 'detail', notif: obj }
+  const [title, setTitle] = useState('');
+  const [message, setMessage] = useState('');
+  const [target, setTarget] = useState('Semua User');
 
   const history = [
     { title:'Maintenance 15 Mar', target:'Semua User', date:'15 Mar 08:00', status:'Terkirim (12.847)' },
@@ -48,7 +61,7 @@ export default function AdminNotifications() {
           <div className="panel-body" style={{display:'flex',flexDirection:'column',gap:12}}>
             <div className="fg" style={{marginBottom:0}}>
               <label className="lbl">Target Penerima</label>
-              <select className="input">
+              <select className="input" value={target} onChange={e => setTarget(e.target.value)}>
                 <option>Semua User</option>
                 <option>Semua Customer</option>
                 <option>Semua Merchant</option>
@@ -59,27 +72,30 @@ export default function AdminNotifications() {
             
             <div className="fg" style={{marginBottom:0}}>
               <label className="lbl">Judul Notifikasi</label>
-              <input className="input" placeholder="Contoh: Maintenance Terjadwal" />
+              <input className="input" placeholder="Contoh: Maintenance Terjadwal" value={title} onChange={e => setTitle(e.target.value)} />
             </div>
             
             <div className="fg" style={{marginBottom:0}}>
               <label className="lbl">Pesan</label>
-              <textarea className="input" style={{height:80,paddingTop:8,resize:'none'}} placeholder="Isi pesan notifikasi..."></textarea>
+              <textarea className="input" style={{height:80,paddingTop:8,resize:'none'}} placeholder="Isi pesan notifikasi..." value={message} onChange={e => setMessage(e.target.value)}></textarea>
             </div>
             
             <div className="fg" style={{marginBottom:0}}>
               <label className="lbl">Jenis</label>
               <div style={{display:'flex',gap:6,flexWrap:'wrap'}}>
                 {[
-                  { id:'info', label:'📢 Info' },
-                  { id:'warn', label:'⚠️ Warning' },
-                  { id:'promo', label:'🔥 Promo' },
-                  { id:'maint', label:'🔧 Maintenance' }
+                  { id:'info', label:'Info', icon: <InformationCircleIcon className="w-4 h-4" /> },
+                  { id:'warn', label:'Warning', icon: <ExclamationTriangleIcon className="w-4 h-4" /> },
+                  { id:'promo', label:'Promo', icon: <FireIcon className="w-4 h-4" /> },
+                  { id:'maint', label:'Maintenance', icon: <WrenchIcon className="w-4 h-4" /> }
                 ].map(t => (
                   <button 
                     key={t.id}
                     className={`btn btn-sm ${type === t.id ? 'active' : ''}`}
                     style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 6,
                       background: type === t.id ? 'rgba(82,183,136,0.15)' : 'transparent',
                       color: type === t.id ? 'var(--c-primary-400)' : 'var(--text-300)',
                       border: `1.5px solid ${type === t.id ? 'rgba(82,183,136,0.35)' : 'rgba(255,255,255,0.1)'}`,
@@ -87,18 +103,25 @@ export default function AdminNotifications() {
                     }}
                     onClick={() => setType(t.id)}
                   >
-                    {t.label}
+                    {t.icon} {t.label}
                   </button>
                 ))}
               </div>
             </div>
             
-            <button className="btn btn-primary btn-block">📢 Kirim Sekarang</button>
+            <button className="btn btn-primary btn-block" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}
+              onClick={() => {
+                if (!title.trim() || !message.trim()) { toast.error('Judul dan pesan wajib diisi'); return; }
+                toast.success(`Notifikasi "${title}" berhasil dikirim ke ${target}`);
+                setTitle(''); setMessage('');
+              }}>
+              <MegaphoneIcon className="w-4 h-4" /> Kirim Sekarang
+            </button>
           </div>
         </div>
         
         <div className="panel" style={{marginBottom:0}}>
-          <div className="panel-header"><div className="panel-title">📋 Riwayat Broadcast</div></div>
+          <div className="panel-header"><div className="panel-title" style={{ display: 'flex', alignItems: 'center', gap: 8 }}><ListBulletIcon className="w-4 h-4" /> Riwayat Broadcast</div></div>
           <table className="tbl">
             <thead><tr><th>Judul</th><th>Target</th><th>Dikirim</th><th>Status</th></tr></thead>
             <tbody>

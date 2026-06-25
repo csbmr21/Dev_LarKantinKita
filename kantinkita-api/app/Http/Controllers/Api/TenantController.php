@@ -5,6 +5,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Tenant;
 use App\Traits\ApiResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 
 class TenantController extends Controller
 {
@@ -51,9 +52,11 @@ class TenantController extends Controller
 
     public function myTenant(Request $request)
     {
-        $tenant = $request->user()->role === 'owner' 
-            ? $request->user()->tenant 
-            : $request->user()->staffTenants()->first();
+        $user = $request->user();
+        $user->loadMissing('tenant');
+        $tenant = $user->isOwner()
+            ? ($user->tenant ?: \App\Models\Tenant::where('user_id', $user->id)->where('is_deleted', 0)->first())
+            : $user->staffTenants()->first();
 
         if (!$tenant) {
             return $this->error('Tenant tidak ditemukan.', 404);
@@ -64,16 +67,18 @@ class TenantController extends Controller
 
     public function updateMyTenant(Request $request)
     {
-        $tenant = $request->user()->role === 'owner' 
-            ? $request->user()->tenant 
-            : $request->user()->staffTenants()->first();
+        $user = $request->user();
+        $user->loadMissing('tenant');
+        $tenant = $user->isOwner()
+            ? ($user->tenant ?: \App\Models\Tenant::where('user_id', $user->id)->where('is_deleted', 0)->first())
+            : $user->staffTenants()->first();
 
         if (!$tenant) {
             return $this->error('Tenant tidak ditemukan.', 404);
         }
 
         $request->validate([
-            'tenant_name' => 'required|string|max:200|unique:tenants,tenant_name,' . $tenant->id,
+            'tenant_name' => ['sometimes', 'required', 'string', 'max:200', Rule::unique('tenants', 'tenant_name')->ignore($tenant->id)->where('is_deleted', false)],
             'description' => 'nullable|string',
             'address'     => 'nullable|string',
             'phone'       => 'nullable|string|max:20',

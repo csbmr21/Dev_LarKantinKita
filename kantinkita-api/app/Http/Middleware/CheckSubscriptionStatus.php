@@ -12,6 +12,11 @@ class CheckSubscriptionStatus
      */
     public function handle(Request $request, Closure $next)
     {
+        // Bypass in local development environment
+        if (config('app.env') === 'local') {
+            return $next($request);
+        }
+
         // Only block write/mutation operations
         if (in_array($request->method(), ['GET', 'HEAD', 'OPTIONS'])) {
             return $next($request);
@@ -19,6 +24,11 @@ class CheckSubscriptionStatus
 
         $user = $request->user();
         if (!$user) return $next($request);
+
+        // Admin bypass
+        if ($user->isAdmin()) {
+            return $next($request);
+        }
 
         // Determine tenant
         $tenant = $user->tenant ?? $user->staffTenants?->first();

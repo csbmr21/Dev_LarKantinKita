@@ -2,6 +2,23 @@ import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { adminApi } from '../../../../api/admin';
 
+import { 
+  ShieldCheckIcon, 
+  LockClosedIcon, 
+  PencilIcon, 
+  TrashIcon, 
+  PlusIcon, 
+  InformationCircleIcon, 
+  ChartBarIcon, 
+  UsersIcon,
+  BriefcaseIcon,
+  CreditCardIcon,
+  UserIcon,
+  CheckCircleIcon,
+  ExclamationTriangleIcon,
+  XMarkIcon
+} from '@heroicons/react/24/outline';
+
 const unwrapList = (r) => {
   const d = r?.data;
   if (Array.isArray(d)) return d;
@@ -31,11 +48,11 @@ const STATIC_MATRIX = {
 };
 
 const ROLE_DISPLAY = {
-  admin:    { icon: '👑', label: 'Super Admin',    color: 'var(--c-primary-400)' },
-  owner:    { icon: '🏪', label: 'Merchant Owner', color: '#FCD34D' },
-  staff:    { icon: '🧾', label: 'Staff Kasir',    color: '#93C5FD' },
-  kasir:    { icon: '🧾', label: 'Kasir',          color: '#93C5FD' },
-  customer: { icon: '👤', label: 'Customer',       color: 'var(--text-300)' },
+  admin:    { icon: <ShieldCheckIcon className="w-5 h-5" />, label: 'Super Admin',    color: 'var(--c-primary-400)' },
+  owner:    { icon: <BriefcaseIcon className="w-5 h-5" />, label: 'Merchant Owner', color: '#FCD34D' },
+  staff:    { icon: <UserIcon className="w-5 h-5" />, label: 'Staff Kasir',    color: '#93C5FD' },
+  kasir:    { icon: <UserIcon className="w-5 h-5" />, label: 'Kasir',          color: '#93C5FD' },
+  customer: { icon: <UsersIcon className="w-5 h-5" />, label: 'Customer',       color: 'var(--text-300)' },
 };
 
 export default function AdminRoles() {
@@ -108,11 +125,11 @@ export default function AdminRoles() {
                     <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--c-primary-400)', marginBottom: 12, borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: 6 }}>Informasi Dasar Role</div>
                     <div className="fg">
                       <label className="lbl">Nama Role</label>
-                      <input className="input" value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} placeholder="Contoh: Manager Operasional" />
+                      <input className="input" value={formData.name || ''} onChange={e => setFormData({ ...formData, name: e.target.value })} placeholder="Contoh: Manager Operasional" />
                     </div>
                     <div className="fg">
                       <label className="lbl">Slug Identifier</label>
-                      <input className="input" value={formData.slug} onChange={e => setFormData({ ...formData, slug: e.target.value })} placeholder="manager_ops" />
+                      <input className="input" value={formData.slug || ''} onChange={e => setFormData({ ...formData, slug: e.target.value })} placeholder="manager_ops" />
                       <div style={{ fontSize: 10, color: 'var(--text-400)', marginTop: 4 }}>Gunakan huruf kecil dan garis bawah (_)</div>
                     </div>
                   </div>
@@ -235,12 +252,15 @@ export default function AdminRoles() {
 
                   return (
                     <div className="perm-row" key={role.id}>
-                      <div className="perm-cell" style={{ fontWeight: 700, color: disp.color }}>
-                        {disp.icon} {role.name}
+                      <div className="perm-cell" style={{ fontWeight: 700, color: disp.color, display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <div style={{ width: 28, height: 28, borderRadius: 'var(--r-sm)', background: `${disp.color}15`, color: disp.color, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                          <div style={{ margin: 'auto' }}>{disp.icon}</div>
+                        </div>
+                        {role.name}
                       </div>
                       {matrix.map((score, i) => (
                         <div key={i} className={`perm-cell perm-${score}`}>
-                          {score === 'yes' ? '✓' : score === 'partial' ? '⚠️' : '✗'}
+                          {score === 'yes' ? <CheckCircleIcon className="w-4 h-4 text-[#52B788]" /> : score === 'partial' ? <ExclamationTriangleIcon className="w-4 h-4 text-[#FCD34D]" /> : <XMarkIcon className="w-4 h-4 text-gray-400 opacity-30" />}
                         </div>
                       ))}
                     </div>

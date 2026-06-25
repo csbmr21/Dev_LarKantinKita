@@ -14,8 +14,11 @@ class StaffController extends Controller
 
     public function index(Request $request)
     {
-        $tenant = $request->user()->tenant;
-        if (!$tenant) return $this->error('Owner belum memiliki tenant.', 403);
+        $tenant = $request->user()->isOwner() 
+            ? $request->user()->tenant 
+            : $request->user()->staffTenants()->first();
+            
+        if (!$tenant) return $this->error('Tenant tidak ditemukan.', 403);
 
         $staff = $tenant->staff()
             ->where('is_deleted', 0)
@@ -31,8 +34,8 @@ class StaffController extends Controller
     {
         $request->validate([
             'full_name' => 'required|string|min:3|max:200',
-            'username'  => 'required|string|min:3|max:100|unique:users,username|alpha_num',
-            'email'     => 'required|email|unique:users,email',
+            'username'  => 'required|string|min:3|max:100|unique:users,username,NULL,id,is_deleted,0|alpha_num',
+            'email'     => 'required|email|unique:users,email,NULL,id,is_deleted,0',
             'phone'     => 'required|string|min:10|max:20',
             'password'  => 'required|string|min:8',
         ]);
@@ -48,7 +51,7 @@ class StaffController extends Controller
             'phone'        => $request->phone,
             'password'     => Hash::make($request->password),
             'role'         => 'staff',
-            'company_code' => 'UNIV',
+            'company_code' => $tenant->company_code ?? $request->user()->company_code,
             'created_by'   => $request->user()->username,
             'updated_by'   => $request->user()->username,
         ]);
@@ -64,7 +67,7 @@ class StaffController extends Controller
         $request->validate([
             'full_name' => 'required|string|min:3|max:200',
             'phone'     => 'required|string|min:10|max:20',
-            'email'     => "required|email|unique:users,email,{$id}",
+            'email'     => "required|email|unique:users,email,{$id},id,is_deleted,0",
         ]);
 
         $tenant = $request->user()->tenant;

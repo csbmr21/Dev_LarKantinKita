@@ -26,11 +26,7 @@ export default function Checkout() {
   const processCheckout = async () => {
     setLoading(true);
     try {
-      const res = await orderApi.checkout({
-        tenant_id: tenantId,
-        items: items.map((i) => ({ menu_id: i.menuId, quantity: i.quantity })),
-        notes,
-      });
+      const res = await orderApi.checkout({ notes, payment_method: paymentMethod });
 
       if (paymentMethod === 'midtrans') {
         if (!window.snap) {
@@ -115,7 +111,7 @@ export default function Checkout() {
 
       <div className="space-y-3 pt-2">
         <Button fullWidth variant="secondary" size="lg" onClick={() => setModalOpen(true)}>
-          💳 Pilih Pembayaran & Bayar
+          Pilih Pembayaran & Bayar
         </Button>
         <Button fullWidth variant="outline" size="lg" onClick={() => navigate(-1)}>
           Cek Kembali Pesanan

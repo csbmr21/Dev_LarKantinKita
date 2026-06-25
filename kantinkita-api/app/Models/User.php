@@ -3,6 +3,7 @@ namespace App\Models;
 
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Laravel\Sanctum\HasApiTokens;
 
@@ -15,10 +16,18 @@ class User extends Authenticatable
     protected static function booted()
     {
         static::saving(function ($user) {
+            // Sync role string → role_id (canonical direction)
             if ($user->isDirty('role') && !$user->isDirty('role_id')) {
                 $roleModel = \App\Models\Role::where('slug', $user->role)->first();
                 if ($roleModel) {
                     $user->role_id = $roleModel->id;
+                }
+            }
+            // Sync role_id → role string (reverse sync for consistency)
+            if ($user->isDirty('role_id') && !$user->isDirty('role')) {
+                $roleModel = \App\Models\Role::find($user->role_id);
+                if ($roleModel) {
+                    $user->role = $roleModel->slug;
                 }
             }
         });
@@ -68,11 +77,31 @@ class User extends Authenticatable
         return asset('storage/' . $this->photo);
     }
 
-    public function scopeActive($query) { return $query->where('status', 1)->where('is_deleted', 0); }
+    public function scopeActive(Builder $query) { return $query->where('status', 1)->where('is_deleted', 0); }
 
-    // Logic updated to check role RELATIONSHIP first, fallback to string column
-    public function isAdmin(): bool    { return ($this->assignedRole?->slug ?? $this->role) === 'admin'; }
-    public function isOwner(): bool    { return ($this->assignedRole?->slug ?? $this->role) === 'owner'; }
-    public function isStaff(): bool    { return ($this->assignedRole?->slug ?? $this->role) === 'staff'; }
-    public function isCustomer(): bool { return ($this->assignedRole?->slug ?? $this->role) === 'customer'; }
+    /**
+     * Canonical role slug — always prefer the relationship, fallback to legacy column.
+     * Use this method everywhere instead of accessing $user->role directly.
+     */
+    public function getRoleSlug(): string
+    {
+        return strtolower($this->assignedRole?->slug ?? $this->role ?? 'customer');
+    }
+
+    // Role checks use the canonical getRoleSlug() method
+    public function isAdmin(): bool    { 
+        $role = $this->getRoleSlug();
+        return $role === 'admin' || $role === 'administrator'; 
+    }
+    public function isOwner(): bool    { 
+        $role = $this->getRoleSlug();
+        return $role === 'owner' || $role === 'merchant'; 
+    }
+    public function isStaff(): bool    { 
+        $role = $this->getRoleSlug();
+        return $role === 'staff' || $role === 'kasir'; 
+    }
+    public function isCustomer(): bool { 
+        return $this->getRoleSlug() === 'customer'; 
+    }
 }

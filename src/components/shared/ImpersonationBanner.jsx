@@ -1,17 +1,19 @@
 import React from 'react';
 import { useAuthStore } from '../../store/authStore';
+import { useImpersonation } from '../../hooks/useImpersonation';
 import { ArrowUturnLeftIcon, ExclamationTriangleIcon } from '@heroicons/react/24/outline';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 
 export default function ImpersonationBanner() {
-  const { isImpersonating, user, originalUser, stopImpersonating } = useAuthStore();
+  const { user, originalUser } = useAuthStore();
+  const { isImpersonating, stopImpersonating } = useImpersonation();
   const navigate = useNavigate();
 
   if (!isImpersonating) return null;
 
-  const handleStop = () => {
-    stopImpersonating();
+  const handleStop = async () => {
+    await stopImpersonating();
     toast.success('Kembali ke akun administrator');
     window.location.href = '/admin/users';
   };

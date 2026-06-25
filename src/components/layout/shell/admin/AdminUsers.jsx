@@ -1,6 +1,21 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { adminApi } from '../../../../api/admin';
+import { useAuthStore } from '../../../../store/authStore';
+import toast from 'react-hot-toast';
+
+import { 
+  MagnifyingGlassIcon, 
+  PlusIcon, 
+  PencilIcon, 
+  TrashIcon, 
+  IdentificationIcon,
+  ShieldCheckIcon,
+  UserIcon,
+  UserGroupIcon,
+  BriefcaseIcon,
+  CommandLineIcon
+} from '@heroicons/react/24/outline';
 
 const unwrapList = (r) => {
   const d = r?.data;
@@ -26,6 +41,7 @@ const ROLE_MAP = {
 
 export default function AdminUsers() {
   const qc = useQueryClient();
+  const { user: currentUser } = useAuthStore();
   const [filter, setFilter] = useState('');
   const [roleFilter, setRoleFilter] = useState('all');
   const [modal, setModal] = useState(null); // { type: 'form'|'detail'|'delete', user: obj }
@@ -57,6 +73,24 @@ export default function AdminUsers() {
   const deleteMut = useMutation({
     mutationFn: (id) => adminApi.deleteUser(id),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['admin-users'] }); setModal(null); },
+  });
+
+  const impersonateAction = useAuthStore(s => s.impersonate);
+  const impersonateMut = useMutation({
+    mutationFn: (id) => adminApi.impersonateUser(id),
+    onSuccess: (res) => {
+      const { user, token } = res.data.data;
+      impersonateAction(user, token);
+      toast.success(`Berhasil menyamar sebagai ${user.full_name}`);
+      
+      // Redirect based on role
+      const role = (user.assigned_role?.slug || user.role || 'customer').toLowerCase();
+      if (role === 'admin') window.location.href = '/admin';
+      else if (role === 'owner') window.location.href = '/owner';
+      else if (role === 'staff' || role === 'kasir') window.location.href = '/staff';
+      else window.location.href = '/';
+    },
+    onError: (err) => toast.error(err.response?.data?.message || 'Gagal memulai penyamaran')
   });
 
   const filtered = users.filter(u => {
@@ -103,40 +137,45 @@ export default function AdminUsers() {
           {/* Form Modal */}
           {modal.type === 'form' && (
             <div onClick={e => e.stopPropagation()} className="kk-modal" style={{ maxWidth: 700, width: '95%' }}>
-              <div className="panel-header" style={{ padding: '0 0 16px', borderBottom: '1px solid var(--border-light)', marginBottom: 16 }}>
-                <div className="panel-title">{modal.user ? 'Edit Data Komprehensif User' : 'Tambah User Baru'}</div>
+              <div className="panel-header" style={{ padding: '0 0 16px', borderBottom: '1px solid var(--border-light)', marginBottom: 16, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <div className="panel-title" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  {modal.user ? <PencilIcon style={{ width: 20 }} /> : <PlusIcon style={{ width: 20 }} />}
+                  {modal.user ? 'Edit Data Komprehensif User' : 'Tambah User Baru'}
+                </div>
                 <button onClick={() => setModal(null)} style={{ background: 'none', border: 'none', color: 'var(--text-400)', cursor: 'pointer' }}>✕</button>
               </div>
               <div className="panel-body" style={{ padding: 0, maxHeight: '70vh', overflowY: 'auto' }}>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24 }}>
                   {/* Kiri */}
                   <div>
-                    <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--c-primary-400)', marginBottom: 12, borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: 6 }}>Informasi Utama</div>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--c-primary-400)', marginBottom: 12, borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: 6, display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <UserIcon style={{ width: 16 }} /> Informasi Utama
+                    </div>
                     <div className="fg">
                       <label className="lbl">Nama Lengkap</label>
-                      <input className="input" value={formData.full_name} onChange={e => setFormData({ ...formData, full_name: e.target.value })} placeholder="John Doe" />
+                      <input className="input" value={formData.full_name || ''} onChange={e => setFormData({ ...formData, full_name: e.target.value })} placeholder="John Doe" />
                     </div>
                     <div className="fg">
                       <label className="lbl">Email Address</label>
-                      <input className="input" type="email" value={formData.email} onChange={e => setFormData({ ...formData, email: e.target.value })} placeholder="john@example.com" />
+                      <input className="input" type="email" value={formData.email || ''} onChange={e => setFormData({ ...formData, email: e.target.value })} placeholder="john@example.com" />
                     </div>
                     <div className="fg">
                       <label className="lbl">Username</label>
-                      <input className="input" value={formData.username} onChange={e => setFormData({ ...formData, username: e.target.value })} placeholder="johndoe123" />
+                      <input className="input" value={formData.username || ''} onChange={e => setFormData({ ...formData, username: e.target.value })} placeholder="johndoe123" />
                     </div>
                     <div className="fg">
                       <label className="lbl">Password {modal.user && <span style={{ color: 'var(--text-400)', fontWeight: 400 }}>(Kosongkan jika tidak diubah)</span>}</label>
-                      <input className="input" type="password" value={formData.password} onChange={e => setFormData({ ...formData, password: e.target.value })} placeholder="••••••••" />
+                      <input className="input" type="password" value={formData.password || ''} onChange={e => setFormData({ ...formData, password: e.target.value })} placeholder="••••••••" />
                     </div>
                     
                     <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--c-primary-400)', margin: '24px 0 12px', borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: 6 }}>Informasi Pribadi</div>
                     <div className="fg">
                       <label className="lbl">No KTP (NIK)</label>
-                      <input className="input" value={formData.no_ktp} onChange={e => setFormData({ ...formData, no_ktp: e.target.value })} placeholder="3201..." />
+                      <input className="input" value={formData.no_ktp || ''} onChange={e => setFormData({ ...formData, no_ktp: e.target.value })} placeholder="3201..." />
                     </div>
                     <div className="fg">
                       <label className="lbl">Tanggal Lahir</label>
-                      <input className="input" type="date" value={formData.dob} onChange={e => setFormData({ ...formData, dob: e.target.value })} />
+                      <input className="input" type="date" value={formData.dob || ''} onChange={e => setFormData({ ...formData, dob: e.target.value })} />
                     </div>
                   </div>
 
@@ -145,7 +184,7 @@ export default function AdminUsers() {
                     <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--c-primary-400)', marginBottom: 12, borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: 6 }}>Role & Sistem</div>
                     <div className="fg">
                       <label className="lbl">Role Akun</label>
-                      <select className="input" value={formData.role} onChange={e => setFormData({ ...formData, role: e.target.value })}>
+                      <select className="input" value={formData.role || 'customer'} onChange={e => setFormData({ ...formData, role: e.target.value })}>
                         <option value="customer">Customer</option>
                         <option value="staff">Staff</option>
                         <option value="owner">Merchant / Owner</option>
@@ -154,11 +193,11 @@ export default function AdminUsers() {
                     </div>
                     <div className="fg">
                       <label className="lbl">Company Code</label>
-                      <input className="input" value={formData.company_code} onChange={e => setFormData({ ...formData, company_code: e.target.value })} placeholder="UNIV" />
+                      <input className="input" value={formData.company_code || ''} onChange={e => setFormData({ ...formData, company_code: e.target.value })} placeholder="UNIV" />
                     </div>
                     <div className="fg">
                       <label className="lbl">No Telepon / WhatsApp</label>
-                      <input className="input" value={formData.phone} onChange={e => setFormData({ ...formData, phone: e.target.value })} placeholder="0812345678" />
+                      <input className="input" value={formData.phone || ''} onChange={e => setFormData({ ...formData, phone: e.target.value })} placeholder="0812345678" />
                     </div>
 
                     <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--c-primary-400)', margin: '24px 0 12px', borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: 6 }}>Preferensi & Status</div>
@@ -293,8 +332,12 @@ export default function AdminUsers() {
                 </div>
                 
                 <div className="kk-modal-btns" style={{ marginTop: 32, borderTop: '1px solid var(--border-light)', paddingTop: 16 }}>
-                  <button className="btn btn-ghost btn-block" onClick={() => deleteMut.mutate(modal.user.id)}>🗑️ Hapus Permanen</button>
-                  <button className="btn btn-primary btn-block" onClick={() => openForm(modal.user)}>✏️ Edit Data</button>
+                  <button className="btn btn-ghost btn-block" onClick={() => deleteMut.mutate(modal.user.id)}>
+                    <TrashIcon className="w-4 h-4 inline mr-1" /> Hapus Permanen
+                  </button>
+                  <button className="btn btn-primary btn-block" onClick={() => openForm(modal.user)}>
+                    <PencilIcon className="w-4 h-4 inline mr-1" /> Edit Data
+                  </button>
                 </div>
               </div>
             </div>
@@ -311,9 +354,12 @@ export default function AdminUsers() {
 
       <div className="panel" style={{ marginBottom: 0 }}>
         <div className="panel-header">
-          <div className="panel-title">👥 User Management</div>
+          <div className="panel-title" style={{ display: 'flex', alignItems: 'center', gap: 8 }}><UserGroupIcon className="w-5 h-5" /> User Management</div>
           <div style={{ display: 'flex', gap: 6 }}>
-            <input className="input" style={{ width: 180 }} placeholder="Cari nama / email..." value={filter} onChange={e => setFilter(e.target.value)} />
+            <div style={{ position: 'relative' }}>
+              <MagnifyingGlassIcon className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+              <input className="input" style={{ width: 180, paddingLeft: 32 }} placeholder="Cari nama / email..." value={filter} onChange={e => setFilter(e.target.value)} />
+            </div>
             <select className="input" style={{ width: 120 }} value={roleFilter} onChange={e => setRoleFilter(e.target.value)}>
               <option value="all">Semua Role</option>
               <option value="customer">Customer</option>
@@ -321,7 +367,9 @@ export default function AdminUsers() {
               <option value="owner">Merchant</option>
               <option value="admin">Admin</option>
             </select>
-            <button className="btn btn-primary btn-sm" onClick={() => openForm(null)}>+ User</button>
+            <button className="btn btn-primary btn-sm" style={{ display: 'flex', alignItems: 'center', gap: 4 }} onClick={() => openForm(null)}>
+              <PlusIcon className="w-4 h-4" /> User
+            </button>
           </div>
         </div>
         <table className="tbl">
@@ -340,7 +388,7 @@ export default function AdminUsers() {
               const fullName = u.full_name ?? u.name ?? '—';
               const tenant = u.tenant?.tenant_name ?? u.tenant?.name ?? u.tenants?.[0]?.tenant_name ?? '—';
               return (
-                <tr key={u.id}>
+                <tr key={u.id} onClick={() => setModal({ type: 'detail', user: u })} style={{ cursor: 'pointer' }} className="hover-row">
                   <td className="tx-strong">{fullName}</td>
                   <td style={{ color: 'var(--text-400)', fontSize: 11, fontFamily: 'var(--font-mono)' }}>{u.email}</td>
                   <td><span className={`badge ${rm.cls}`}>{rm.label}</span></td>
@@ -349,12 +397,22 @@ export default function AdminUsers() {
                   <td>
                     {isActive
                       ? <span className="badge badge-ok"><span className="badge-dot" />Aktif</span>
-                      : <span className="badge badge-err"><span className="badge-dot" />Nonaktif</span>
+                      : <span className="badge badge-err"><span className="badge-dot" />Suspend</span>
                     }
                   </td>
-                  <td>
+                  <td onClick={e => e.stopPropagation()}>
                     <div style={{ display: 'flex', gap: 4 }}>
                       <button className="btn btn-ghost btn-sm" onClick={() => setModal({ type: 'detail', user: u })}>Detail</button>
+                      {isActive && u.id !== currentUser?.id && (
+                        <button 
+                          className="btn btn-sm" 
+                          style={{ background: 'rgba(82,183,136,0.1)', color: 'var(--c-primary-400)', border: '1px solid rgba(82,183,136,0.2)', display: 'flex', alignItems: 'center', gap: 4 }}
+                          onClick={() => { if(window.confirm(`Masuk sebagai ${fullName}?`)) impersonateMut.mutate(u.id); }}
+                          disabled={impersonateMut.isPending}
+                        >
+                          <IdentificationIcon className="w-4 h-4" /> Penyamaran
+                        </button>
+                      )}
                       <button
                         className={`btn btn-sm ${isActive ? 'btn-danger-outline' : 'btn-primary'}`}
                         disabled={toggleMut.isPending}

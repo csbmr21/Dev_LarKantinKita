@@ -16,8 +16,20 @@ class MenuController extends Controller
 
     private function getTenant(Request $request)
     {
-        $tenant = $request->user()->staffTenants()->first();
-        if (!$tenant) abort(403, 'Staff belum terhubung ke tenant.');
+        $user = $request->user();
+        
+        // If owner, get from direct relationship
+        if ($user->isOwner()) {
+            $tenant = $user->tenant;
+        } else {
+            // If staff/kasir, get from many-to-many relationship
+            $tenant = $user->staffTenants()->first();
+        }
+
+        if (!$tenant) {
+            abort(403, 'Akses ditolak. Anda belum terhubung ke tenant mana pun.');
+        }
+
         return $tenant;
     }
 

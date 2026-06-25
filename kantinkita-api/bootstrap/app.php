@@ -11,6 +11,7 @@ use App\Http\Middleware\CheckSubscriptionStatus;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
+        web: __DIR__.'/../routes/web.php',
         api: __DIR__.'/../routes/api.php',
         apiPrefix: 'api/v1',
         health: '/up',
@@ -57,7 +58,7 @@ return Application::configure(basePath: dirname(__DIR__))
 
                 try {
                     \App\Models\ErrorLog::create([
-                        'user_id'         => auth()->id(),
+                        'user_id'         => $request->user()?->id,
                         'level'           => 'error',
                         'message'         => $e->getMessage(),
                         'stack_trace'     => $e->getTraceAsString(),
@@ -74,8 +75,11 @@ return Application::configure(basePath: dirname(__DIR__))
                     return response()->json([
                         'status'  => false,
                         'message' => $e->getMessage(),
-                        'file'    => $e->getFile(),
-                        'line'    => $e->getLine(),
+                        'trace'   => collect($e->getTrace())->take(5)->map(fn($t) => [
+                            'file' => basename($t['file'] ?? ''),
+                            'line' => $t['line'] ?? null,
+                            'function' => ($t['class'] ?? '') . ($t['type'] ?? '') . ($t['function'] ?? ''),
+                        ]),
                     ], 500);
                 }
 

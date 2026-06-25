@@ -1,10 +1,18 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { 
+  DevicePhoneMobileIcon, 
+  ComputerDesktopIcon, 
+  BuildingStorefrontIcon, 
+  ShieldCheckIcon,
+  ChevronDownIcon,
+  ArrowRightOnRectangleIcon
+} from '@heroicons/react/24/outline';
 
 const ALL_TABS = [
-  { id: 'customer',  label: 'Customer',  icon: '📱', roles: ['customer', 'admin'] },
-  { id: 'kasir',    label: 'Kasir',     icon: '🖥️', roles: ['staff',   'admin'] },
-  { id: 'merchant', label: 'Merchant',  icon: '🏪', roles: ['owner',   'admin'] },
-  { id: 'admin',    label: 'Admin',     icon: '⚙️', roles: ['admin']            },
+  { id: 'customer',  label: 'Customer',  icon: <DevicePhoneMobileIcon className="w-4 h-4" />, roles: ['customer', 'admin'] },
+  { id: 'kasir',    label: 'Kasir',     icon: <ComputerDesktopIcon className="w-4 h-4" />, roles: ['staff',   'admin'] },
+  { id: 'merchant', label: 'Merchant',  icon: <BuildingStorefrontIcon className="w-4 h-4" />, roles: ['owner',   'admin'] },
+  { id: 'admin',    label: 'Admin',     icon: <ShieldCheckIcon className="w-4 h-4" />, roles: ['admin']            },
 ];
 
 const ROLE_LABEL = {
@@ -46,36 +54,7 @@ export default function RoleBar({ activeRole, onRoleChange, userRoleName, isAdmi
 
       {/* ── Right: User Identity ───────────────────── */}
       <div className="kk-rolebar-right">
-        {/* Role switcher for admin — compact dropdown */}
-        {isAdmin && (
-          <div style={{ position: 'relative' }} ref={dropRef}>
-            <button
-              className="kk-view-switch-btn"
-              onClick={() => setDropOpen(o => !o)}
-              title="Ganti tampilan"
-            >
-              {ALL_TABS.find(t => t.id === activeRole)?.icon ?? '⚙️'}
-              <span style={{ fontSize: 11, fontWeight: 700 }}>
-                {ALL_TABS.find(t => t.id === activeRole)?.label}
-              </span>
-              <span style={{ fontSize: 9, opacity: .6 }}>▼</span>
-            </button>
-
-            {dropOpen && (
-              <div className="kk-role-dropdown">
-                {visibleTabs.map(t => (
-                  <button
-                    key={t.id}
-                    className={`kk-role-dropdown-item ${activeRole === t.id ? 'active' : ''}`}
-                    onClick={() => { onRoleChange(t.id); setDropOpen(false); }}
-                  >
-                    <span>{t.icon}</span> {t.label}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
+        {/* Role switcher for admin — REMOVED as per user request */}
 
         {/* User Pill */}
         <div className="kk-user-pill">
@@ -90,7 +69,9 @@ export default function RoleBar({ activeRole, onRoleChange, userRoleName, isAdmi
           </div>
         </div>
 
-        <button className="kk-logout-btn" onClick={onLogout} title="Keluar">⏏</button>
+        <button className="kk-logout-btn" onClick={onLogout} title="Keluar">
+          <ArrowRightOnRectangleIcon className="w-4 h-4" />
+        </button>
       </div>
     </div>
   );

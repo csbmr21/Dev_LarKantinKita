@@ -29,14 +29,21 @@ class SubscriptionController extends Controller
 
         // Check trial status
         $trialActive = $tenant->trial_ends_at && now()->lte($tenant->trial_ends_at);
-        $trialDaysRemaining = $tenant->trial_ends_at ? now()->diffInDays($tenant->trial_ends_at, false) : null;
+        $trialDaysRemaining = $tenant->trial_ends_at
+            ? max(0, (int) ceil(now()->diffInDays($tenant->trial_ends_at, false)))
+            : 0;
+
+        $daysRemaining = null;
+        if ($subscription) {
+            $daysRemaining = max(0, (int) ceil(now()->diffInDays($subscription->billing_end, false)));
+        }
 
         return $this->success([
             'has_subscription'     => (bool) $subscription,
             'subscription'         => $subscription,
             'is_active'            => $subscription?->isActive() ?? false,
             'is_expiring_soon'     => $subscription?->isExpiringSoon() ?? false,
-            'days_remaining'       => $subscription ? now()->diffInDays($subscription->billing_end, false) : null,
+            'days_remaining'       => $daysRemaining,
             'plans'                => $plans,
             'trial_active'         => $trialActive,
             'trial_ends_at'        => $tenant->trial_ends_at,
@@ -72,10 +79,12 @@ class SubscriptionController extends Controller
             'tenant_id'       => $tenant->id,
             'plan'            => $request->plan,
             'amount'          => $prices[$request->plan],
-            'billing_status'  => 'pending',
+            'billing_status'  => 'trial',
             'approval_status' => 'pending',
             'invoice_number'  => 'INV-' . strtoupper(uniqid()),
             'company_code'    => $tenant->company_code ?? 'UNIV',
+            'billing_start'   => now()->toDateString(),
+            'billing_end'     => now()->toDateString(),
             'created_by'      => $request->user()->username,
             'updated_by'      => $request->user()->username,
         ]);

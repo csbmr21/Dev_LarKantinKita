@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { reportApi } from '../../../../api/report';
 import { adminApi } from '../../../../api/admin';
+import toast from 'react-hot-toast';
 
 const unwrapList = (r) => {
   const d = r?.data;
@@ -95,7 +96,7 @@ export default function AdminFinance() {
                 
                 <div className="kk-modal-btns" style={{ marginTop: 32, borderTop: '1px solid var(--border-light)', paddingTop: 16 }}>
                   <button className="btn-cancel" onClick={() => setModal(null)}>Tutup Detail</button>
-                  <button className="btn-primary" onClick={() => { alert('Disbursed!'); setModal(null); }}>Proses Pencairan Dana 💸</button>
+                  <button className="btn-primary" onClick={() => { toast.success(`Pencairan dana ${fmt(modal.settlement.net)} untuk ${modal.settlement.name} berhasil diproses`); setModal(null); }}>Proses Pencairan Dana 💸</button>
                 </div>
               </div>
             </div>

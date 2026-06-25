@@ -14,7 +14,7 @@ export function useStaffOrders(status = 'paid') {
 export function useCustomerOrders(filters = {}) {
   return useQuery({
     queryKey: ['orders', filters],
-    queryFn: () => orderApi.getOrders(filters).then((r) => r.data),
+    queryFn: () => orderApi.getOrders(filters).then((r) => r.data.data),
   });
 }
 

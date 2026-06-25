@@ -1,6 +1,20 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { adminApi } from '../../../../api/admin';
+import { 
+  BuildingStorefrontIcon, 
+  MapPinIcon, 
+  PhoneIcon, 
+  ClockIcon, 
+  ShieldCheckIcon,
+  PlusIcon,
+  PencilIcon,
+  TrashIcon,
+  MagnifyingGlassIcon, 
+  ExclamationCircleIcon, 
+  CheckCircleIcon, 
+  IdentificationIcon 
+} from '@heroicons/react/24/outline';
 
 const unwrapList = (r) => {
   const d = r?.data;
@@ -45,7 +59,20 @@ export default function AdminTenants() {
   });
 
   const saveMut = useMutation({
-    mutationFn: (data) => modal.tenant?.id ? adminApi.updateTenant(modal.tenant.id, data) : adminApi.createTenant(data),
+    mutationFn: (data) => {
+      const payload = {
+        tenant_name: data.name,
+        description: data.description,
+        address: data.address,
+        phone: data.phone,
+        min_order: data.min_order,
+        is_open: data.is_open,
+        status: data.status,
+        company_code: data.company_code,
+        slug: data.slug,
+      };
+      return modal.tenant?.id ? adminApi.updateTenant(modal.tenant.id, payload) : adminApi.createTenant(payload);
+    },
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['admin-tenants'] }); setModal(null); },
   });
 
@@ -54,16 +81,23 @@ export default function AdminTenants() {
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['admin-tenants'] }); setModal(null); },
   });
 
+  const mapStatus = (t) => {
+    const s = t.status;
+    if (s === true || s === 1 || s === '1' || s === 'active' || s === 'approved') return 'active';
+    if (s === 'trial') return 'trial';
+    if (s === 'pending') return 'pending';
+    return 'suspended';
+  };
+
   const filtered = tenants.filter(t => {
     const name = t.tenant_name ?? t.name ?? '';
-    const isActive = t.status === true || t.status === 1 || t.status === '1';
-    const mappedStatus = isActive ? 'active' : 'suspended';
+    const mappedStatus = mapStatus(t);
     const matchStatus = statusFilter === 'all' || mappedStatus === statusFilter;
     const matchText = name.toLowerCase().includes(filter.toLowerCase());
     return matchStatus && matchText;
   });
 
-  const count = (s) => tenants.filter(t => ((t.status === true || t.status === 1 || t.status === '1') ? 'active' : 'suspended') === s).length;
+  const count = (s) => tenants.filter(t => mapStatus(t) === s).length;
 
   const openForm = (t = null) => {
     setFormData(t ? { 
@@ -93,7 +127,7 @@ export default function AdminTenants() {
           {(modal.type === 'suspend' || modal.type === 'activate') && (
             <div onClick={e => e.stopPropagation()} className="kk-modal">
               <div className={`kk-modal-icon ${modal.type === 'suspend' ? 'danger' : 'ok'}`}>
-                {modal.type === 'suspend' ? '⏸' : '▶'}
+                {modal.type === 'suspend' ? <ExclamationCircleIcon className="w-8 h-8" /> : <CheckCircleIcon className="w-8 h-8" />}
               </div>
               <div className="kk-modal-title">{modal.type === 'suspend' ? 'Suspend Tenant?' : 'Aktifkan Tenant?'}</div>
               <div className="kk-modal-body">
@@ -152,7 +186,7 @@ export default function AdminTenants() {
                     </div>
                     <div className="fg">
                       <label className="lbl">Minimal Order (Rp)</label>
-                      <input className="input" type="number" value={formData.min_order} onChange={e => setFormData({ ...formData, min_order: e.target.value })} />
+                      <input className="input" type="number" value={formData.min_order || 0} onChange={e => setFormData({ ...formData, min_order: e.target.value })} />
                     </div>
                     
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 12, padding: '12px 16px', background: 'rgba(255,255,255,0.03)', borderRadius: 'var(--r-md)' }}>
@@ -226,8 +260,12 @@ export default function AdminTenants() {
                 </div>
 
                 <div className="kk-modal-btns" style={{ marginTop: 32, borderTop: '1px solid var(--border-light)', paddingTop: 16 }}>
-                  <button className="btn btn-ghost btn-block" onClick={() => deleteMut.mutate(modal.tenant.id)}>🗑️ Hapus Permanen</button>
-                  <button className="btn btn-primary btn-block" onClick={() => openForm(modal.tenant)}>✏️ Edit Data</button>
+                  <button className="btn btn-ghost btn-block" onClick={() => deleteMut.mutate(modal.tenant.id)}>
+                    <TrashIcon className="w-4 h-4 inline mr-1" /> Hapus Permanen
+                  </button>
+                  <button className="btn btn-primary btn-block" onClick={() => openForm(modal.tenant)}>
+                    <PencilIcon className="w-4 h-4 inline mr-1" /> Edit Data
+                  </button>
                 </div>
               </div>
             </div>
@@ -237,23 +275,28 @@ export default function AdminTenants() {
 
       {/* Stats */}
       <div className="stat-grid sg4">
-        <div className="stat-card"><div className="stat-val" style={{ color: 'var(--c-primary-400)' }}>{count('active') + count('approved')}</div><div className="stat-label">Total Aktif</div></div>
-        <div className="stat-card"><div className="stat-val" style={{ color: '#FCA5A5' }}>{count('suspended') + count('inactive')}</div><div className="stat-label">Suspended</div></div>
+        <div className="stat-card"><div className="stat-val" style={{ color: 'var(--c-primary-400)' }}>{count('active')}</div><div className="stat-label">Total Aktif</div></div>
+        <div className="stat-card"><div className="stat-val" style={{ color: '#FCA5A5' }}>{count('suspended')}</div><div className="stat-label">Suspended</div></div>
         <div className="stat-card"><div className="stat-val" style={{ color: '#FCD34D' }}>{count('trial')}</div><div className="stat-label">Trial</div></div>
         <div className="stat-card"><div className="stat-val" style={{ color: '#93C5FD' }}>{tenants.length}</div><div className="stat-label">Total Tenant</div></div>
       </div>
 
       <div className="panel" style={{ marginBottom: 0 }}>
         <div className="panel-header">
-          <div className="panel-title">🏪 Tenant Management</div>
+          <div className="panel-title" style={{ display: 'flex', alignItems: 'center', gap: 8 }}><BuildingStorefrontIcon className="w-5 h-5" /> Tenant Management</div>
           <div style={{ display: 'flex', gap: 6 }}>
-            <input className="input" style={{ width: 160 }} placeholder="Cari tenant..." value={filter} onChange={e => setFilter(e.target.value)} />
+            <div style={{ position: 'relative' }}>
+              <MagnifyingGlassIcon className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+              <input className="input" style={{ width: 160, paddingLeft: 32 }} placeholder="Cari tenant..." value={filter} onChange={e => setFilter(e.target.value)} />
+            </div>
             <select className="input" style={{ width: 130 }} value={statusFilter} onChange={e => setStatusFilter(e.target.value)}>
               <option value="all">Semua Status</option>
               <option value="active">Aktif</option>
               <option value="suspended">Suspended</option>
             </select>
-            <button className="btn btn-primary" onClick={() => openForm(null)}>+ Tenant</button>
+            <button className="btn btn-primary btn-sm" style={{ display: 'flex', alignItems: 'center', gap: 4 }} onClick={() => openForm(null)}>
+              <PlusIcon className="w-4 h-4" /> Tenant
+            </button>
           </div>
         </div>
         <table className="tbl">
@@ -261,16 +304,20 @@ export default function AdminTenants() {
             <tr><th>Tenant</th><th>Slug</th><th>Paket</th><th>Toko</th><th>Akun</th><th>Bergabung</th><th>Aksi</th></tr>
           </thead>
           <tbody>
-            {isLoading && <tr><td colSpan={6} style={{ textAlign: 'center', padding: 32, color: 'var(--text-400)' }}>Memuat...</td></tr>}
+            {isLoading && <tr><td colSpan={7} style={{ textAlign: 'center', padding: 32, color: 'var(--text-400)' }}>Memuat...</td></tr>}
             {!isLoading && filtered.length === 0 && (
-              <tr><td colSpan={6} style={{ textAlign: 'center', padding: 32, color: 'var(--text-400)' }}>Tidak ada data</td></tr>
+              <tr><td colSpan={7} style={{ textAlign: 'center', padding: 32, color: 'var(--text-400)' }}>Tidak ada data</td></tr>
             )}
             {filtered.map(t => {
-              const isActive = t.status === true || t.status === 1 || t.status === '1';
-              const mappedStatus = isActive ? 'active' : 'suspended';
+              const mappedStatus = mapStatus(t);
+              const isActive = mappedStatus === 'active';
               const sm = STATUS_MAP[mappedStatus] ?? STATUS_MAP.active;
-              const planName = t.subscription?.plan?.name ?? t.plan ?? 'Starter';
+              
+              // Correctly access plan name (it's a column in subscription, not a relationship)
+              const rawPlan = t.subscription?.plan ?? t.plan ?? 'Starter';
+              const planName = rawPlan.charAt(0).toUpperCase() + rawPlan.slice(1).toLowerCase();
               const pm = PLAN_MAP[planName] ?? PLAN_MAP.Starter;
+              
               const tenantName = t.tenant_name ?? t.name ?? '—';
               return (
                 <tr key={t.id}>

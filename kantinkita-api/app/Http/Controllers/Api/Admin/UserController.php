@@ -33,11 +33,17 @@ class UserController extends Controller
     {
         $request->validate([
             'full_name' => 'required|string|min:3|max:200',
-            'username'  => 'required|string|min:3|max:100|unique:users,username|alpha_num',
-            'email'     => 'required|email|unique:users,email',
+            'username'  => 'required|string|min:3|max:100|unique:users,username,NULL,id,is_deleted,0|alpha_num',
+            'email'     => 'required|email|unique:users,email,NULL,id,is_deleted,0',
             'phone'     => 'required|string|min:10|max:20',
             'password'  => 'required|string|min:8',
             'role'      => 'required|in:admin,owner,staff,customer',
+            'no_ktp'    => 'nullable|string|max:50',
+            'dob'       => 'nullable|date',
+            'company_code' => 'nullable|string|max:20',
+            'status'    => 'nullable|boolean',
+            'email_notif' => 'nullable|boolean',
+            'wa_notif'    => 'nullable|boolean',
             'permissions' => 'nullable|array',
             'permissions.*' => 'exists:permissions,id',
         ]);
@@ -50,7 +56,12 @@ class UserController extends Controller
             'phone'        => $request->phone,
             'password'     => Hash::make($request->password),
             'role'         => $request->role,
-            'company_code' => 'UNIV',
+            'no_ktp'       => $request->no_ktp,
+            'dob'          => $request->dob,
+            'company_code' => $request->company_code ?? 'UNIV',
+            'status'       => $request->status ?? 1,
+            'email_notif'  => $request->email_notif ?? 1,
+            'wa_notif'     => $request->wa_notif ?? 0,
             'created_by'   => $request->user()->username,
             'updated_by'   => $request->user()->username,
         ]);
@@ -70,14 +81,23 @@ class UserController extends Controller
         $request->validate([
             'full_name' => 'sometimes|string|min:3|max:200',
             'phone'     => 'sometimes|string|min:10|max:20',
-            'email'     => "sometimes|email|unique:users,email,{$id}",
+            'email'     => "sometimes|email|unique:users,email,{$id},id,is_deleted,0",
             'role'      => 'sometimes|in:admin,owner,staff,customer',
             'status'    => 'sometimes|boolean',
+            'no_ktp'    => 'nullable|string|max:50',
+            'dob'       => 'nullable|date',
+            'company_code' => 'nullable|string|max:20',
+            'email_notif' => 'nullable|boolean',
+            'wa_notif'    => 'nullable|boolean',
             'permissions' => 'nullable|array',
             'permissions.*' => 'exists:permissions,id',
         ]);
 
-        $data = $request->only(['full_name', 'phone', 'email', 'role', 'status']);
+        $data = $request->only([
+            'full_name', 'phone', 'email', 'role', 'status', 
+            'no_ktp', 'dob', 'company_code', 'email_notif', 'wa_notif'
+        ]);
+        
         if (isset($data['full_name'])) $data['name'] = $data['full_name'];
         $data['updated_by'] = $request->user()->username;
 

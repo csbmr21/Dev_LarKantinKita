@@ -14,13 +14,15 @@ export function useAuth() {
   const navigate = useNavigate();
 
   const getDashboardPath = useCallback(() => {
-    return ROLE_DASHBOARDS[user?.role] ?? '/';
+    const roleValue = user?.role?.slug ?? user?.role;
+    return ROLE_DASHBOARDS[roleValue] ?? '/';
   }, [user?.role]);
 
   const handleLogin = useCallback(
     (userData, userToken) => {
       login(userData, userToken);
-      const path = ROLE_DASHBOARDS[userData.role] ?? '/';
+      const roleValue = userData.role?.slug ?? userData.role;
+      const path = ROLE_DASHBOARDS[roleValue] ?? '/';
       navigate(path, { replace: true });
     },
     [login, navigate]
@@ -39,7 +41,10 @@ export function useAuth() {
   }, [logout, navigate]);
 
   const hasRole = useCallback(
-    (...roles) => roles.includes(user?.role),
+    (...roles) => {
+      const roleValue = user?.role?.slug ?? user?.role;
+      return roles.includes(roleValue);
+    },
     [user?.role]
   );
 
