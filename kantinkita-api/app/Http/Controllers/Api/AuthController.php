@@ -479,7 +479,7 @@ class AuthController extends Controller
 
     public function redirectToGoogleGmail()
     {
-        $redirectUri = url('/api/v1/auth/google/gmail-callback');
+        $redirectUri = rtrim(config('app.url', 'http://localhost:8000'), '/') . '/api/v1/auth/google/gmail-callback';
         
         $queries = http_build_query([
             'client_id'     => env('GOOGLE_CLIENT_ID'),
@@ -500,7 +500,7 @@ class AuthController extends Controller
             return response('No authorization code provided.', 400);
         }
 
-        $redirectUri = url('/api/v1/auth/google/gmail-callback');
+        $redirectUri = rtrim(config('app.url', 'http://localhost:8000'), '/') . '/api/v1/auth/google/gmail-callback';
 
         $response = Http::post('https://oauth2.googleapis.com/token', [
             'client_id'     => env('GOOGLE_CLIENT_ID'),
