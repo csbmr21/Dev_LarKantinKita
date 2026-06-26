@@ -16,7 +16,21 @@ export default function OtpVerification() {
   
   const [otp, setOtp] = useState(['', '', '', '', '', '']);
   const [loading, setLoading] = useState(false);
+  const [resendLoading, setResendLoading] = useState(false);
   const inputRefs = useRef([]);
+
+  // Resend OTP handler
+  const handleResend = async () => {
+    setResendLoading(true);
+    try {
+      await authApi.resendOtp({ email, intent });
+      toast.success('Kode baru telah dikirim ke email Anda!');
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Gagal mengirim ulang OTP. Coba lagi nanti.');
+    } finally {
+      setResendLoading(false);
+    }
+  };
 
   useEffect(() => {
     if (!email || !intent) {
@@ -151,9 +165,10 @@ export default function OtpVerification() {
               <button 
                 type="button"
                 className="text-[#2D6A4F] font-bold hover:text-[#1B4332] transition-colors mt-2"
-                onClick={() => toast.success('Kode baru telah dikirim!')}
+                onClick={handleResend}
+                disabled={resendLoading}
               >
-                Kirim Ulang Email
+                {resendLoading ? 'Mengirim...' : 'Kirim Ulang Email'}
               </button>
             </p>
           </div>

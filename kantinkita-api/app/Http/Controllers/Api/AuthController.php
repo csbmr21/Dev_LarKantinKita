@@ -415,6 +415,43 @@ class AuthController extends Controller
         ], 'Verifikasi berhasil');
     }
 
+    public function resendOtp(Request $request)
+    {
+        $request->validate([
+            'email' => 'required|email',
+            'intent' => 'required|string',
+        ]);
+
+        // Get cached OTP data
+        $cached = Cache::get("otp_intent:{$request->intent}");
+
+        if (!$cached || $cached['email'] !== $request->email) {
+            return $this->error('Sesi verifikasi kadaluarsa atau tidak valid.', 422);
+        }
+
+        // Generate new OTP
+        $otp = str_pad(rand(0, 999999), 6, '0', STR_PAD_LEFT);
+
+        // Update cache with new OTP
+        Cache::put("otp_intent:{$request->intent}", [
+            'user_id' => $cached['user_id'],
+            'email' => $request->email,
+            'otp' => $otp
+        ], now()->addMinutes(10));
+
+        // Send new OTP email
+        try {
+            $user = User::findOrFail($cached['user_id']);
+            Mail::to($user->email)->send(new OtpMail($user, $otp));
+            ActivityLog::record('login_attempt', "OTP dikirim ulang ke: {$user->email}", $user->id);
+            
+            return $this->success(null, 'Kode OTP baru telah dikirim ke email Anda.');
+        } catch (\Throwable $e) {
+            Log::error('Failed to resend OTP email: ' . $e->getMessage());
+            return $this->error('Gagal mengirim ulang OTP. Silakan coba lagi nanti.', 500);
+        }
+    }
+
     public function forgotPassword(Request $request)
     {
         $request->validate(['email' => 'required|email|exists:users,email']);
