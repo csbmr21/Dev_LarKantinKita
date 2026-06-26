@@ -38,14 +38,25 @@ return [
     'mailers' => [
 
         'smtp' => [
-            'transport' => 'smtp',
-            'scheme' => env('MAIL_SCHEME'),
-            'url' => env('MAIL_URL'),
-            'host' => env('MAIL_HOST', '127.0.0.1'),
-            'port' => env('MAIL_PORT', 2525),
-            'username' => env('MAIL_USERNAME'),
-            'password' => env('MAIL_PASSWORD'),
-            'timeout' => null,
+            'transport'    => 'smtp',
+            // Laravel 11 uses 'scheme'. If MAIL_SCHEME is not set, derive it from
+            // the legacy MAIL_ENCRYPTION variable so both work seamlessly.
+            // ssl  (port 465) → 'smtps'
+            // tls  (port 587) → null  (STARTTLS is negotiated automatically)
+            'scheme'       => env('MAIL_SCHEME', (function () {
+                $enc = strtolower((string) env('MAIL_ENCRYPTION', ''));
+                return match ($enc) {
+                    'ssl'   => 'smtps',
+                    'tls'   => null,
+                    default => null,
+                };
+            })()),
+            'url'          => env('MAIL_URL'),
+            'host'         => env('MAIL_HOST', '127.0.0.1'),
+            'port'         => env('MAIL_PORT', 2525),
+            'username'     => env('MAIL_USERNAME'),
+            'password'     => env('MAIL_PASSWORD'),
+            'timeout'      => null,
             'local_domain' => env('MAIL_EHLO_DOMAIN', parse_url(env('APP_URL', 'http://localhost'), PHP_URL_HOST)),
         ],
 
