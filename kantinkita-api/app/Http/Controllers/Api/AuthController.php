@@ -580,4 +580,38 @@ class AuthController extends Controller
             'hint'    => 'Jika code tidak null, berarti Google Redirect URI sudah benar.',
         ]);
     }
+
+    /**
+     * Endpoint untuk mendiagnosis error email secara real-time.
+     * Route: GET /api/v1/auth/test-email?email=emailanda@gmail.com
+     */
+    public function testEmail(Request $request)
+    {
+        $targetEmail = $request->query('email', 'pangestu5711@gmail.com');
+        $results = [];
+
+        // Ambil konfigurasi saat ini untuk ditampilkan
+        $results['config'] = [
+            'default_mailer' => config('mail.default'),
+            'from_address'   => config('mail.from.address'),
+            'smtp_host'      => config('mail.mailers.smtp.host'),
+            'smtp_port'      => config('mail.mailers.smtp.port'),
+            'smtp_scheme'    => config('mail.mailers.smtp.scheme'),
+        ];
+
+        // Jalankan test kirim
+        try {
+            Mail::raw('Ini adalah email uji coba koneksi dari backend KantinKita.', function ($message) use ($targetEmail) {
+                $message->to($targetEmail)
+                    ->subject('Test Koneksi Mailer KantinKita');
+            });
+            $results['send_result'] = '✅ SUKSES! Email berhasil terkirim ke ' . $targetEmail;
+        } catch (\Exception $e) {
+            $results['send_result'] = '❌ GAGAL!';
+            $results['error_message'] = $e->getMessage();
+            $results['error_trace'] = substr($e->getTraceAsString(), 0, 500) . '...';
+        }
+
+        return response()->json($results);
+    }
 }

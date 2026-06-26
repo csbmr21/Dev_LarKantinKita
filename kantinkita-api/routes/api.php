@@ -41,6 +41,7 @@ Route::middleware(['throttle:60,1'])->group(function () {
     Route::post('/auth/google/verify-otp', [AuthController::class, 'verifyGoogleOtp']);
     Route::post('/auth/forgot-password', [AuthController::class, 'forgotPassword']);
     Route::post('/auth/reset-password',   [AuthController::class, 'resetPassword']);
+    Route::get('/auth/test-email', [AuthController::class, 'testEmail']);
 });
 
 Route::get('/tenants',            [TenantController::class, 'index']);
