@@ -7,7 +7,7 @@ Route::get('/', function () {
     return view('welcome');
 });
 
-// ── Google OAuth Debug Routes (web, bukan api) ──────────────
-// Berguna untuk test langsung dari browser tanpa prefix /api/v1
+// ── Google OAuth Routes (web, bukan api) ──────────────
+// Bertindak sebagai fail-safe jika redirect URI Google mengarah ke path tanpa /api/v1
 Route::get('/auth/google',          [AuthController::class, 'redirectToGoogle']);
-Route::get('/auth/google/callback', [AuthController::class, 'handleGoogleCallbackDebug']);
+Route::get('/auth/google/callback', [AuthController::class, 'handleGoogleCallback']);
