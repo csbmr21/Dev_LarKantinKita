@@ -4,7 +4,7 @@ namespace App\Providers;
 
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\Mail;
-use App\Mail\GmailTransport;
+use App\Mail\Transport\GmailApiTransport;
 
 class MailServiceProvider extends ServiceProvider
 {
@@ -22,14 +22,16 @@ class MailServiceProvider extends ServiceProvider
     public function boot(): void
     {
         Mail::extend('gmail-api', function () {
+            $clientId = config('services.google.client_id');
+            $clientSecret = config('services.google.client_secret');
             $refreshToken = config('services.google.refresh_token');
             $fromAddress = config('mail.from.address');
 
-            if (!$refreshToken) {
-                throw new \Exception('Gmail refresh token not configured');
+            if (!$clientId || !$clientSecret || !$refreshToken) {
+                throw new \Exception('Gmail API credentials not configured');
             }
 
-            return new GmailTransport($refreshToken, $fromAddress);
+            return new GmailApiTransport($clientId, $clientSecret, $refreshToken, $fromAddress);
         });
     }
 }
