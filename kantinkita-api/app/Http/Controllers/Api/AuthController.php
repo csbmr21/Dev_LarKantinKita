@@ -556,4 +556,28 @@ class AuthController extends Controller
             </html>
         ";
     }
+
+    /**
+     * Debug-only callback: returns raw Google OAuth code as JSON.
+     * Useful to verify Railway callback URL is reachable.
+     * Route: GET /auth/google/callback  (web.php)
+     */
+    public function handleGoogleCallbackDebug(Request $request)
+    {
+        $code  = $request->get('code');
+        $error = $request->get('error');
+
+        if ($error) {
+            return response()->json([
+                'message' => 'Google OAuth ditolak / dibatalkan',
+                'error'   => $error,
+            ], 400);
+        }
+
+        return response()->json([
+            'message' => '✅ Callback masuk dengan sukses!',
+            'code'    => $code ? substr($code, 0, 20) . '...' : null,
+            'hint'    => 'Jika code tidak null, berarti Google Redirect URI sudah benar.',
+        ]);
+    }
 }
