@@ -13,20 +13,18 @@ vi.mock('../axios', () => ({
   },
 }));
 
-describe('report.js exploration tests (MUST FAIL before fix)', () => {
+describe('report.js API tests (via adminApi alias)', () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
-  it('getAdminReport should send GET to /api/v1/admin/reports/aggregate', async () => {
+  it('getAdminReportAggregate should send GET to /api/v1/admin/reports/aggregate', async () => {
     // Mock response
     api.get.mockResolvedValue({ data: { status: true, data: {} } });
 
     const params = { start_date: '2024-01-01', end_date: '2024-01-31' };
-    await reportApi.getAdminReport(params);
+    await reportApi.getAdminReportAggregate(params);
 
-    // This test MUST FAIL before fix because current implementation sends to /api/v1/admin/reports
-    // After fix, it should send to /api/v1/admin/reports/aggregate
     expect(api.get).toHaveBeenCalledWith('/api/v1/admin/reports/aggregate', { params });
   });
 

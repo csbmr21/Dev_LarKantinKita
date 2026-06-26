@@ -36,22 +36,30 @@ class NotificationService
     private function sendToCustomer(Order $order, string $template): void
     {
         $user = $order->user;
-        if ($user->email_notif) {
-            SendEmailNotification::dispatch($user, $order, $template)->onQueue('notifications');
-        }
-        if ($user->wa_notif && $user->phone) {
-            SendWhatsAppNotification::dispatch($user, $order, $template)->onQueue('notifications');
+        try {
+            if ($user->email_notif) {
+                SendEmailNotification::dispatchSync($user, $order, $template);
+            }
+            if ($user->wa_notif && $user->phone) {
+                SendWhatsAppNotification::dispatchSync($user, $order, $template);
+            }
+        } catch (\Exception $e) {
+            \Log::warning('Customer notification failed: ' . $e->getMessage());
         }
     }
 
     private function sendToStaff(Order $order, string $template): void
     {
         foreach ($order->tenant->staff as $staff) {
-            if ($staff->email_notif) {
-                SendEmailNotification::dispatch($staff, $order, $template)->onQueue('notifications');
-            }
-            if ($staff->wa_notif && $staff->phone) {
-                SendWhatsAppNotification::dispatch($staff, $order, $template)->onQueue('notifications');
+            try {
+                if ($staff->email_notif) {
+                    SendEmailNotification::dispatchSync($staff, $order, $template);
+                }
+                if ($staff->wa_notif && $staff->phone) {
+                    SendWhatsAppNotification::dispatchSync($staff, $order, $template);
+                }
+            } catch (\Exception $e) {
+                \Log::warning('Staff notification failed: ' . $e->getMessage());
             }
         }
     }

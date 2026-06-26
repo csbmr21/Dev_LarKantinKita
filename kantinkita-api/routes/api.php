@@ -24,7 +24,6 @@ use App\Http\Controllers\Api\Admin\BackupController;
 use App\Http\Controllers\Api\Admin\RoleController;
 use App\Http\Controllers\Api\Admin\PermissionController;
 use App\Http\Controllers\Api\Admin\DocumentTypeController;
-use App\Http\Controllers\Api\Admin\ReportController as AdminReportController;
 use App\Http\Controllers\Api\Admin\SubscriptionController as AdminSubscriptionController;
 
 // ═══════════════════════════
@@ -74,8 +73,8 @@ Route::middleware(['auth:sanctum', 'throttle:120,1'])->group(function () {
         Route::get('/cart',          [CartController::class, 'index']);
         Route::post('/cart/add',     [CartController::class, 'add']);
         Route::put('/cart/{id}',     [CartController::class, 'update']);
+        Route::delete('/cart/clear', [CartController::class, 'clear']);    // Must be before /cart/{id}
         Route::delete('/cart/{id}',  [CartController::class, 'remove']);
-        Route::delete('/cart/clear', [CartController::class, 'clear']);
         Route::post('/checkout',     [CheckoutController::class, 'checkout']);
         Route::get('/orders',        [CustomerOrderController::class, 'index']);
         Route::get('/orders/{id}',   [CustomerOrderController::class, 'show']);

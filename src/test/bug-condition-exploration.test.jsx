@@ -277,24 +277,17 @@ describe('Bug Condition Exploration Tests — MUST FAIL ON UNFIXED CODE', () => 
   });
 
   // ──────────────────────────────────────────────────────────
-  // Test 3 — Bug 8a: Checkout sends { tenant_id, items[], notes }
+  // Test 3 — Bug 8a: Checkout should NOT send tenant_id/items[]
   // ──────────────────────────────────────────────────────────
-  it('Test 3 — Bug 8a: Checkout SHOULD call orderApi.checkout with ONLY { notes }', async () => {
+  it('Test 3 — Bug 8a: Checkout SHOULD call orderApi.checkout with { notes, payment_method }', async () => {
     /**
      * Validates: Requirements 1.8
-     * EXPECTED: FAIL on unfixed code.
+     * EXPECTED: PASS — the old bug (sending tenant_id + items[]) has been fixed.
      *
-     * Buggy lines in Checkout.jsx processCheckout():
-     *   const res = await orderApi.checkout({
-     *     tenant_id: tenantId,
-     *     items: items.map((i) => ({ menu_id: i.menuId, quantity: i.quantity })),
-     *     notes,
-     *   });
+     * Current correct code in Checkout.jsx processCheckout():
+     *   const res = await orderApi.checkout({ notes, payment_method: paymentMethod });
      *
-     * Backend only accepts { notes } and reads cart from DB.
-     *
-     * Counterexample: orderApi.checkout was called with
-     *   { tenant_id: 1, items: [{menu_id:1,quantity:1},{menu_id:2,quantity:2}], notes: "Test note" }
+     * Backend accepts { notes, payment_method } and reads cart from DB.
      */
     useAuthStore.mockReturnValue({
       user: { full_name: 'Budi Santoso', phone: '0812345678' },
@@ -332,9 +325,14 @@ describe('Bug Condition Exploration Tests — MUST FAIL ON UNFIXED CODE', () => 
 
     const callArg = orderApi.checkout.mock.calls[0][0];
 
-    // WILL FAIL: actual call is { tenant_id: 1, items: [...], notes: "Test note" }
-    // The assertion expects only { notes: "Test note" }
-    expect(callArg).toEqual({ notes: 'Test note' });
+    // Should NOT contain tenant_id or items (those are read from server-side cart)
+    expect(callArg).not.toHaveProperty('tenant_id');
+    expect(callArg).not.toHaveProperty('items');
+
+    // Should contain notes and payment_method
+    // notes defaults to '' because location.state is not set in this test
+    expect(callArg).toHaveProperty('notes');
+    expect(callArg).toHaveProperty('payment_method', 'qris');
   });
 
   // ──────────────────────────────────────────────────────────
