@@ -282,11 +282,47 @@ If using Vercel Auth (optional):
 
 ### Step 1: Create OAuth 2.0 Credentials
 1. Go to https://console.cloud.google.com/apis/credentials
-2. Create new project: `kantinkita-sandbox`
-3. Click **"+ CREATE CREDENTIALS"** → **"OAuth client ID"**
-4. Application type: **Web application**
+2. Click **"CREATE PROJECT"** → Name: `kantinkita-sandbox`
+3. Wait for project creation (~30 seconds)
+4. In top bar, verify project is selected: `kantinkita-sandbox`
 
-### Step 2: Configure Authorized Redirect URIs
+### Step 2: Enable Required APIs
+1. Click **"+ ENABLE APIS AND SERVICES"**
+2. Search for: `Gmail API`
+3. Click **"Enable"**
+4. Search for: `People API`
+5. Click **"Enable"**
+
+### Step 3: Configure OAuth Consent Screen
+1. Click **"OAuth consent screen"** in left menu
+2. User type: **"External"** → Click **"Create"**
+3. Fill in:
+   - **App name**: `KantinKita Sandbox`
+   - **User support email**: `pangestu5711@gmail.com`
+   - **App logo** (optional): Skip
+   - **Application home page**: Leave blank
+   - **Application privacy policy link**: Leave blank
+   - **Application terms of service link**: Leave blank
+   - **Authorized domains**: 
+     - `vercel.app`
+     - `railway.app`
+   - **Developer contact information**: `pangestu5711@gmail.com`
+4. Click **"Save and Continue"**
+5. Add scopes:
+   - Click **"Add scopes"**
+   - Check: `https://www.googleapis.com/auth/gmail.send`
+   - Click **"Update"** then **"Save and Continue"**
+6. Add test users:
+   - Click **"Add users"**
+   - Add: `pangestu5711@gmail.com`
+   - Click **"Add"** then **"Save and Continue"**
+7. Review summary → Click **"Back to dashboard"**
+
+### Step 4: Create OAuth 2.0 Credentials
+1. Click **"+ CREATE CREDENTIALS"** → **"OAuth client ID"**
+2. Application type: **"Web application"**
+3. Name: `KantinKita Sandbox OAuth`
+4. Add authorized redirect URIs:
 
 #### Backend (Railway)
 ```
@@ -299,20 +335,212 @@ https://devlarkantinkita-sandbox.up.railway.app/api/v1/auth/google/gmail-callbac
 https://kksandbox.vercel.app/auth/callback
 ```
 
-### Step 3: Configure JavaScript Origins
+#### Local Development
 ```
-https://kksandbox.vercel.app
-https://devlarkantinkita-sandbox.up.railway.app
-http://localhost:5173
+http://localhost:5173/auth/callback
+http://localhost:8000/auth/google/callback
 ```
 
-### Step 4: Get Gmail API Refresh Token
+5. Click **"Create"**
+
+### Step 5: Copy OAuth Credentials
+You'll see:
+```
+Client ID: 123456789-abc123xyz789.apps.googleusercontent.com
+Client Secret: GOCSPX-abc123xyz789
+```
+
+**IMPORTANT**: Copy both values - you'll need them for Railway and Vercel environment variables.
+
+**DO NOT close this window yet** - you need to generate Gmail API refresh token.
+
+---
+
+## Phase 4b: Gmail App Password Creation (Alternative to OAuth)
+
+### Option A: Use OAuth 2.0 (Recommended for Production)
+Follow Steps 1-5 above. This is more secure and production-ready.
+
+### Option B: Use Gmail App Password (Simpler for Testing)
+If OAuth setup is too complex, use app password:
+
+#### Step 1: Enable 2-Factor Authentication
+1. Go to https://myaccount.google.com/security
+2. Under **"Signing in to Google"**, click **"2-Step Verification"**
+3. Click **"Get Started"**
+4. Follow prompts to set up phone number
+5. Verify by entering code sent to your phone
+6. Complete setup
+
+#### Step 2: Generate App Password
+1. Go to https://myaccount.google.com/apppasswords
+   - If you don't see it, go to **"Security"** → **"2-Step Verification"** → scroll to **"App passwords"**
+2. Under **"Select app"**, choose: **"Mail"**
+3. Under **"Select device"**, choose: **"Other (Custom name)"**
+4. Name: `KantinKita Sandbox`
+5. Click **"Generate"**
+6. Copy the 16-character password (format: `abcd efgh ijkl mnop`)
+7. **Store this securely** - you'll need it for Railway `GOOGLE_CLIENT_SECRET`
+
+#### Step 3: Configure Environment Variables
+For app password, use these values:
+```
+GOOGLE_CLIENT_ID=your-google-client-id (can be any string for app password)
+GOOGLE_CLIENT_SECRET=abcd efgh ijkl mnop (the 16-char app password)
+GOOGLE_REDIRECT_URI=https://devlarkantinkita-sandbox.up.railway.app/auth/google/callback
+GOOGLE_GMAIL_REDIRECT_URI=https://devlarkantinkita-sandbox.up.railway.app/api/v1/auth/google/gmail-redirect
+```
+
+**Note**: For app password, `GOOGLE_CLIENT_ID` can be any string (not used for auth). The actual authentication uses the app password in `GOOGLE_CLIENT_SECRET`.
+
+---
+
+## Phase 4c: Get Gmail API Refresh Token (OAuth Flow)
+
+### Step 1: Initialize OAuth Flow
 1. Open: `https://devlarkantinkita-sandbox.up.railway.app/api/v1/auth/google/gmail-redirect`
 2. Sign in with `pangestu5711@gmail.com`
 3. Grant permissions:
    - `https://www.googleapis.com/auth/gmail.send`
-4. Copy the refresh token from the success page
-5. Paste into Railway variable `GOOGLE_REFRESH_TOKEN`
+   - `https://www.googleapis.com/auth/userinfo.email`
+   - `https://www.googleapis.com/auth/userinfo.profile`
+4. You'll see success page with:
+   ```
+   Refresh Token: 1//0dX... (long string)
+   ```
+
+### Step 2: Copy Refresh Token
+1. **Copy the full refresh token** (starts with `1//0dX...`)
+2. Go to Railway Dashboard → Variables
+3. Add variable:
+   - Key: `GOOGLE_REFRESH_TOKEN`
+   - Value: [paste your refresh token]
+4. Click **"Update Variable"**
+
+### Step 3: Verify Configuration
+1. In Railway Dashboard → Variables, verify all variables are set:
+   - `GOOGLE_CLIENT_ID`
+   - `GOOGLE_CLIENT_SECRET`
+   - `GOOGLE_REFRESH_TOKEN`
+   - `MAIL_MAILER=gmail-api`
+2. Click **"Deploy latest commit"** to restart backend
+3. Wait for deployment (~2 minutes)
+
+---
+
+## Phase 5: Direct MySQL Connection to Railway
+
+### Option A: Using MySQL Workbench (Recommended for GUI Users)
+
+#### Step 1: Install MySQL Workbench
+1. Download: https://dev.mysql.com/downloads/workbench/
+2. Install for Windows
+3. Launch MySQL Workbench
+
+#### Step 2: Get Railway MySQL Connection Details
+1. In Railway Dashboard → your project → **MySQL** service
+2. Click **"Connect"**
+3. Click **"Connection Strings"**
+4. Copy **"Direct Connection"** values:
+   ```
+   Host: roundhouse.proxy.railway.app
+   Port: 56348
+   User: railway
+   Password: [your-password]
+   Database: railway
+   SSL: Required
+   ```
+
+#### Step 3: Create New Connection in MySQL Workbench
+1. Click **"+ Add Connection"**
+2. Configuration:
+   - **Connection Name**: `Railway MySQL - KantinKita`
+   - **Connection Method**: Standard TCP
+   - **Hostname**: `roundhouse.proxy.railway.app`
+   - **Port**: `56348`
+   - **Username**: `railway`
+   - **Password**: Click **"Store in Keychain"** → paste Railway password
+3. Click **"Test Connection"**
+4. Should show: **"Connection successful"**
+5. Click **"OK"**
+
+#### Step 4: Import Database
+1. Double-click your connection to connect
+2. In top menu: **File** → **Run SQL Script**
+3. Select your SQL file: `kantinkita_db_export.sql`
+4. Click **"Execute"** (yellow bolt icon)
+5. Wait for completion (~1-2 minutes)
+6. Check **"Output"** tab for success message
+
+#### Step 5: Verify Import
+1. In **"Schemas"** sidebar, click **"Refresh"**
+2. You should see: `railway` database
+3. Right-click `railway` → **"Set as Default Schema"**
+4. Click **"Tables"** → should see all tables (users, menus, orders, etc.)
+
+---
+
+### Option B: Using Command Line (For Advanced Users)
+
+#### Step 1: Get Railway MySQL Credentials
+```bash
+# In Railway Dashboard → MySQL → Connect → Connection Strings
+# Copy these values:
+HOST=roundhouse.proxy.railway.app
+PORT=56348
+USER=railway
+PASSWORD=[your-password-from-railway]
+DATABASE=railway
+```
+
+#### Step 2: Connect via MySQL Client
+```bash
+# Windows (PowerShell)
+mysql -h roundhouse.proxy.railway.app -P 56348 -u railway -p railway < kantinkita_db_export.sql
+
+# Or interactive connection
+mysql -h roundhouse.proxy.railway.app -P 56348 -u railway -p
+# Then in MySQL:
+USE railway;
+SOURCE kantinkita_db_export.sql;
+```
+
+#### Step 3: Verify Import
+```sql
+SHOW DATABASES;
+USE railway;
+SHOW TABLES;
+SELECT COUNT(*) FROM users;
+SELECT COUNT(*) FROM menus;
+```
+
+---
+
+### Option C: Using Database GUI Tools (DBeaver, TablePlus, etc.)
+
+#### DBeaver Example:
+1. Open DBeaver → **Database** → **Create** → **MySQL**
+2. Connection settings:
+   - Host: `roundhouse.proxy.railway.app`
+   - Port: `56348`
+   - Database: `railway`
+   - Username: `railway`
+   - Password: [paste from Railway]
+3. Click **"Test Connection"**
+4. After success, right-click connection → **"Run SQL"**
+5. Open your SQL file → Execute
+
+#### TablePlus Example:
+1. Open TablePlus → **+** to add connection
+2. Select **MySQL**
+3. Fill in:
+   - Host: `roundhouse.proxy.railway.app`
+   - Port: `56348`
+   - Username: `railway`
+   - Password: [paste from Railway]
+   - Database: `railway`
+4. Click **"Connect"**
+5. Click **"Query"** tab → Open SQL file → Execute
 
 ---
 
@@ -402,3 +630,155 @@ vercel --prod
 | Gmail API | Configured with refresh token | Config |
 
 **Total Deployment Time**: ~30-45 minutes
+---
+
+## Phase 8: ChatGPT Prompt Template
+
+### Prompt for Deployment Assistance
+Copy and paste this prompt to ChatGPT or any AI assistant for deployment help:
+
+```
+You are an expert DevOps engineer specializing in Laravel, React, Railway, and Vercel deployments.
+
+I need to deploy a full-stack application with the following architecture:
+- Backend: Laravel API (in folder `kantinkita-api`)
+- Frontend: React + Vite (in root folder)
+- Database: MySQL on Railway (Free tier, 100MB)
+- Hosting: Railway for backend, Vercel for frontend
+- Authentication: Google OAuth with Gmail API for OTP emails
+
+Current environment details:
+- Railway project name: `kantinkita-sandbox`
+- Backend URL: https://devlarkantinkita-sandbox.up.railway.app
+- Frontend URL: https://kksandbox.vercel.app
+- Email: pangestu5711@gmail.com
+
+Please help me with the following steps:
+
+1. Create a comprehensive deployment checklist for Railway and Vercel
+2. Provide step-by-step instructions for:
+   - Setting up MySQL on Railway
+   - Importing local database to Railway MySQL (using MySQL Workbench)
+   - Configuring Gmail API for OTP email sending
+   - Setting up Google OAuth 2.0 credentials
+   - Configuring environment variables on both platforms
+
+3. Provide the exact commands and configuration files needed:
+   - Laravel `.env` for production
+   - Vercel environment variables
+   - Gmail transport configuration
+
+4. Help troubleshoot common issues:
+   - Database connection errors
+   - Gmail API "unsupported mail transport" errors
+   - CORS errors between frontend and backend
+   - Storage path issues
+
+Please be very specific with:
+- Exact command-line instructions
+- File paths
+- Configuration file contents
+- Railway/Vercel dashboard navigation steps
+
+Return all information in a well-structured markdown format.
+```
+
+### Prompt for Bug Fixing
+If you encounter issues after deployment:
+
+```
+I deployed my Laravel + React application to Railway (backend) and Vercel (frontend).
+
+Context:
+- Backend: https://devlarkantinkita-sandbox.up.railway.app
+- Frontend: https://kksandbox.vercel.app
+- Database: Railway MySQL
+- Authentication: Google OAuth with OTP via Gmail API
+
+Problem: [Describe your issue clearly]
+
+Error logs:
+[Copy relevant error messages]
+
+I've already tried:
+[Describe what you've attempted]
+
+Please help me:
+1. Diagnose the root cause
+2. Provide step-by-step fix instructions
+3. Verify the fix works
+
+Include specific commands, file edits, and Railway/Vercel settings changes.
+```
+
+### Prompt for Database Migration
+```
+I need to migrate my local MySQL database to Railway.
+
+Current setup:
+- Local database name: `kantinkita_db`
+- Export file: `kantinkita_db_export.sql`
+- Railway MySQL host: `roundhouse.proxy.railway.app`
+- Railway MySQL port: `56348`
+- Railway MySQL user: `railway`
+
+Please provide:
+1. Step-by-step instructions to connect to Railway MySQL using MySQL Workbench
+2. Command to import the SQL file
+3. Verification queries to confirm import success
+4. Laravel `.env` configuration for Railway MySQL
+
+Include troubleshooting for common connection errors.
+```
+
+---
+
+## Appendix: Quick Reference
+
+### Railway Variables Checklist
+- [ ] `APP_KEY` (generated with `php artisan key:generate`)
+- [ ] `APP_URL` (`https://devlarkantinkita-sandbox.up.railway.app`)
+- [ ] `APP_ENV` (`production`)
+- [ ] `APP_DEBUG` (`false`)
+- [ ] `DB_CONNECTION` (`mysql`)
+- [ ] `DB_HOST` (auto-provided by Railway)
+- [ ] `DB_PORT` (auto-provided by Railway)
+- [ ] `DB_DATABASE` (auto-provided by Railway)
+- [ ] `DB_USERNAME` (auto-provided by Railway)
+- [ ] `DB_PASSWORD` (auto-provided by Railway)
+- [ ] `FRONTEND_URL` (`https://kksandbox.vercel.app`)
+- [ ] `MAIL_MAILER` (`gmail-api`)
+- [ ] `MAIL_FROM_ADDRESS` (`pangestu5711@gmail.com`)
+- [ ] `GOOGLE_CLIENT_ID` (from Google Cloud Console)
+- [ ] `GOOGLE_CLIENT_SECRET` (from Google Cloud Console or app password)
+- [ ] `GOOGLE_REFRESH_TOKEN` (generated via OAuth flow)
+- [ ] `QUEUE_CONNECTION` (`sync`)
+
+### Vercel Environment Variables Checklist
+- [ ] `VITE_API_BASE_URL` (`https://devlarkantinkita-sandbox.up.railway.app/api/v1`)
+- [ ] `VITE_GOOGLE_CLIENT_ID` (from Google Cloud Console)
+- [ ] `VITE_APP_NAME` (`KantinKita Sandbox`)
+- [ ] `VITE_APP_URL` (`https://kksandbox.vercel.app`)
+
+### Gmail API Setup Checklist
+- [ ] Created Google Cloud project: `kantinkita-sandbox`
+- [ ] Enabled Gmail API
+- [ ] Configured OAuth consent screen
+- [ ] Created OAuth 2.0 credentials
+- [ ] Added authorized redirect URIs
+- [ ] Generated refresh token
+- [ ] Stored refresh token in Railway variables
+
+### Testing Checklist
+- [ ] Backend health check: `/api/v1/up`
+- [ ] Database connection: Run any API endpoint that queries database
+- [ ] Google OAuth login: Attempt login with `pangestu5711@gmail.com`
+- [ ] OTP email delivery: Check inbox (and spam folder)
+- [ ] Frontend-backend integration: Test user profile, orders, menus
+- [ ] File storage: Upload and view profile picture
+
+---
+
+**Last Updated**: 2026-06-26
+**Version**: 1.0
+**Maintainer**: Dev Team
