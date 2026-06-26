@@ -235,7 +235,7 @@ class AuthController extends Controller
                 Mail::to($freshUser->email)->send(
                     new \App\Mail\TenantRegisteredMail($freshUser, $freshUser->tenant, $companyCode)
                 );
-            } catch (\Exception $e) {
+            } catch (\Throwable $e) {
                 Log::warning('Failed to send tenant registration email: ' . $e->getMessage());
             }
         }
@@ -366,7 +366,7 @@ class AuthController extends Controller
             // Kirim Email (menggunakan send secara sinkronous agar terkirim tanpa antrean/queue worker)
             try {
                 Mail::to($user->email)->send(new OtpMail($user, $otp));
-            } catch (\Exception $e) {
+            } catch (\Throwable $e) {
                 Log::error('Failed to send OTP email: ' . $e->getMessage());
                 // Tetap lanjut, user bisa cek log jika mode log aktif
             }
@@ -441,7 +441,7 @@ class AuthController extends Controller
             Mail::to($user->email)->send(new ResetPasswordMail($user, $token));
             ActivityLog::record('forgot_password', "Request reset password untuk: {$user->email}", $user->id);
             return $this->success(null, 'Instruksi reset password telah dikirim ke email Anda.');
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             Log::error('Forgot Password Email Error: ' . $e->getMessage());
             return $this->error('Gagal mengirim email reset password. Coba lagi nanti.', 500);
         }
