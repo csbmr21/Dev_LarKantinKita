@@ -48,7 +48,7 @@
                 Silakan login ke dashboard Admin untuk meninjau dan menyetujui pengajuan ini setelah pembayaran dikonfirmasi.
             </p>
             <div class="cta">
-                <a href="http://localhost:5173/admin">Buka Dashboard Admin</a>
+                <a href="{{ config('app.frontend_url', 'http://localhost:5173') }}/admin">Buka Dashboard Admin</a>
             </div>
         </div>
         <div class="footer">

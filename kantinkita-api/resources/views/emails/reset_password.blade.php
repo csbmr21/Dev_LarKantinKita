@@ -26,7 +26,7 @@
             <span class="token">{{ $token }}</span>
             
             <p>Atau klik tombol di bawah ini untuk langsung mereset password Anda:</p>
-            <a href="http://localhost:5173/reset-password?token={{ $token }}&email={{ urlencode($user->email) }}" class="button">Reset Password Sekarang</a>
+            <a href="{{ config('app.frontend_url', 'http://localhost:5173') }}/reset-password?token={{ $token }}&email={{ urlencode($user->email) }}" class="button">Reset Password Sekarang</a>
             
             <p style="margin-top: 20px; font-size: 13px; color: #666;">
                 Kode ini akan kedaluwarsa dalam 60 menit. Jika Anda tidak merasa melakukan permintaan ini, abaikan saja email ini.
