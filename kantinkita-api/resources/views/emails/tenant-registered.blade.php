@@ -23,7 +23,7 @@
         <p>Untuk mengamankan akun Anda dan menyelesaikan proses verifikasi, silakan klik tombol di bawah ini untuk mengatur Autentikasi 2 Langkah (2FA).</p>
         
         <div style="text-align: center; margin: 30px 0;">
-            <a href="{{ url(env('FRONTEND_URL', 'http://localhost:5173') . '/2fa-setup?code=' . $companyCode) }}" style="background-color: #2D6A4F; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 5px; font-weight: bold; display: inline-block;">Verifikasi Akun & Setup 2FA</a>
+            <a href="{{ url(config('app.frontend_url', 'http://localhost:5173') . '/2fa-setup?code=' . $companyCode) }}" style="background-color: #2D6A4F; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 5px; font-weight: bold; display: inline-block;">Verifikasi Akun & Setup 2FA</a>
         </div>
         
         <p style="color: #6b7280; font-size: 13px; border-top: 1px solid #e5e7eb; padding-top: 20px; margin-top: 40px;">

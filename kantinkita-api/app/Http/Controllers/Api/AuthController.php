@@ -304,6 +304,8 @@ class AuthController extends Controller
 
     public function handleGoogleCallback()
     {
+        $frontend = config('app.frontend_url', 'http://localhost:5173');
+
         try {
             /** @var \Laravel\Socialite\Two\GoogleProvider $driver */
             $driver = Socialite::driver('google');
@@ -345,8 +347,6 @@ class AuthController extends Controller
                     'status' => 1,
                 ]);
             }
-
-            $frontend = config('app.frontend_url', 'http://localhost:5173');
 
             if (!$user->status) {
                 return redirect($frontend . '/login?error=Akun+dinonaktifkan');
@@ -482,7 +482,7 @@ class AuthController extends Controller
         $redirectUri = rtrim(config('app.url', 'http://localhost:8000'), '/') . '/api/v1/auth/google/gmail-callback';
         
         $queries = http_build_query([
-            'client_id'     => env('GOOGLE_CLIENT_ID'),
+            'client_id'     => config('services.google.client_id'),
             'redirect_uri'  => $redirectUri,
             'scope'         => 'https://www.googleapis.com/auth/gmail.send',
             'response_type' => 'code',
@@ -503,8 +503,8 @@ class AuthController extends Controller
         $redirectUri = rtrim(config('app.url', 'http://localhost:8000'), '/') . '/api/v1/auth/google/gmail-callback';
 
         $response = Http::post('https://oauth2.googleapis.com/token', [
-            'client_id'     => env('GOOGLE_CLIENT_ID'),
-            'client_secret' => env('GOOGLE_CLIENT_SECRET'),
+            'client_id'     => config('services.google.client_id'),
+            'client_secret' => config('services.google.client_secret'),
             'redirect_uri'  => $redirectUri,
             'code'          => $code,
             'grant_type'    => 'authorization_code',
