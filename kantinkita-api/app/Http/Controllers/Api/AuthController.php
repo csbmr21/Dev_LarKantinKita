@@ -564,8 +564,8 @@ class AuthController extends Controller
      */
     public function handleGoogleCallbackDebug(Request $request)
     {
-        $code  = $request->get('code');
-        $error = $request->get('error');
+        $code  = $request->input('code');
+        $error = $request->input('error');
 
         if ($error) {
             return response()->json([
