@@ -14,7 +14,7 @@ return [
     |
     */
 
-    'default' => env('MAIL_MAILER', 'log'),
+    'default' => env('MAIL_MAILER', env('MAIL_MAILER', 'log')),
 
     /*
     |--------------------------------------------------------------------------
@@ -77,7 +77,13 @@ return [
         ],
 
         'gmail-api' => [
-            'transport' => 'gmail-api',
+            'transport' => env('MAIL_MAILER') === 'gmail-api' ? 'smtp' : 'log',
+            'host' => env('SMTP_HOST', 'smtp.gmail.com'),
+            'port' => env('SMTP_PORT', 587),
+            'username' => env('SMTP_USERNAME'),
+            'password' => env('SMTP_PASSWORD'),
+            'timeout' => env('MAIL_TIMEOUT', 5),
+            'auth_mode' => 'tls',
         ],
 
         'sendmail' => [
