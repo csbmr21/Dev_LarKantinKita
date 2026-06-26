@@ -363,9 +363,9 @@ class AuthController extends Controller
                 'otp' => $otp
             ], now()->addMinutes(10));
 
-            // Kirim Email (menggunakan queue agar asinkronous/tidak blocking)
+            // Kirim Email (menggunakan send secara sinkronous agar terkirim tanpa antrean/queue worker)
             try {
-                Mail::to($user->email)->queue(new OtpMail($user, $otp));
+                Mail::to($user->email)->send(new OtpMail($user, $otp));
             } catch (\Exception $e) {
                 Log::error('Failed to send OTP email: ' . $e->getMessage());
                 // Tetap lanjut, user bisa cek log jika mode log aktif
