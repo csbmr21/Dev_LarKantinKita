@@ -100,4 +100,55 @@ class AuthTest extends TestCase
         $response->assertStatus(200)
                  ->assertJsonPath('data.email', $user->email);
     }
+
+    public function test_setup_profile_customer_success(): void
+    {
+        // Seeder roles need to exist
+        $this->artisan('db:seed', ['--class' => 'RolePermissionSeeder']);
+
+        $user = User::factory()->create([
+            'role' => 'customer',
+            'profile_completed' => false,
+        ]);
+        $token = $user->createToken('test')->plainTextToken;
+
+        $response = $this->withToken($token)->putJson('/api/v1/auth/setup-profile', [
+            'username' => 'customeruser',
+            'full_name' => 'Customer User',
+            'email' => $user->email,
+            'phone' => '081234567890',
+            'no_ktp' => '1234567890123456',
+            'dob' => '2000-01-01',
+            'role' => 'customer',
+            'tenant_name' => '',
+        ]);
+
+        $response->assertStatus(200);
+    }
+
+    public function test_setup_profile_owner_success(): void
+    {
+        // Seeder roles need to exist
+        $this->artisan('db:seed', ['--class' => 'RolePermissionSeeder']);
+
+        $user = User::factory()->create([
+            'role' => 'customer', // newly registered user has role customer by default
+            'profile_completed' => false,
+        ]);
+        $token = $user->createToken('test')->plainTextToken;
+
+        $response = $this->withToken($token)->putJson('/api/v1/auth/setup-profile', [
+            'username' => 'owneruser',
+            'full_name' => 'Owner User',
+            'email' => $user->email,
+            'phone' => '081234567890',
+            'no_ktp' => '1234567890123456',
+            'dob' => '2000-01-01',
+            'role' => 'owner',
+            'tenant_name' => 'Toko Owner Baru',
+        ]);
+
+        $response->assertStatus(200);
+    }
 }
+

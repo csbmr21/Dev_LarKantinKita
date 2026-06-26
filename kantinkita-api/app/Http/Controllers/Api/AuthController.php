@@ -170,7 +170,7 @@ class AuthController extends Controller
             'phone' => 'nullable|string|max:20',
             'dob' => 'nullable|date',
             'role' => 'required|in:customer,owner',
-            'tenant_name' => 'required_if:role,owner|string|max:200',
+            'tenant_name' => 'required_if:role,owner|nullable|string|max:200',
             'password' => 'nullable|string|min:8|confirmed',
         ]);
 
