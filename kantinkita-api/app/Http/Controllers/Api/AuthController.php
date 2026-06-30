@@ -314,11 +314,13 @@ class AuthController extends Controller
             $user = User::where('email', $googleUser->getEmail())->first();
 
             if ($user) {
-                // Update google_id, ENSURE status is active (1)
+                if ($user->is_deleted || !$user->status) {
+                    return redirect($frontend . '/login?error=Akun+Anda+telah+dinonaktifkan');
+                }
+                // Update google_id, photo
                 $user->update([
                     'google_id' => $googleUser->getId(),
                     'photo' => $googleUser->getAvatar(),
-                    'status' => 1,
                 ]);
             } else {
                 // Generate a unique username
@@ -402,6 +404,8 @@ class AuthController extends Controller
 
         // OTP Valid -> Selesaikan Login
         $user = User::findOrFail($cached['user_id']);
+        $user->load(['tenant', 'assignedRole']);
+        $user->computed_permissions = $user->getAllPermissions()->pluck('slug');
 
         // Hapus Cache setelah berhasil
         Cache::forget("otp_intent:{$request->intent}");

@@ -150,5 +150,119 @@ class AuthTest extends TestCase
 
         $response->assertStatus(200);
     }
+
+    public function test_verify_google_otp_success(): void
+    {
+        $this->artisan('db:seed', ['--class' => 'RolePermissionSeeder']);
+
+        $user = User::factory()->create([
+            'email' => 'googleuser@example.com',
+            'role' => 'customer',
+        ]);
+        $intent = \Illuminate\Support\Str::random(40);
+        $otp = '123456';
+
+        \Illuminate\Support\Facades\Cache::put("otp_intent:{$intent}", [
+            'user_id' => $user->id,
+            'email' => $user->email,
+            'otp' => $otp
+        ], now()->addMinutes(10));
+
+        $response = $this->postJson('/api/v1/auth/google/verify-otp', [
+            'email' => 'googleuser@example.com',
+            'intent' => $intent,
+            'otp' => $otp,
+        ]);
+
+        $response->assertStatus(200)
+                 ->assertJsonPath('status', true)
+                 ->assertJsonStructure(['data' => ['token', 'user']]);
+                 
+        $data = $response->json('data');
+        $this->assertArrayHasKey('computed_permissions', $data['user']);
+        $this->assertArrayHasKey('tenant', $data['user']);
+        $this->assertArrayHasKey('assigned_role', $data['user']);
+    }
+
+    public function test_verify_google_otp_invalid(): void
+    {
+        $user = User::factory()->create(['email' => 'googleuser@example.com']);
+        $intent = \Illuminate\Support\Str::random(40);
+
+        \Illuminate\Support\Facades\Cache::put("otp_intent:{$intent}", [
+            'user_id' => $user->id,
+            'email' => $user->email,
+            'otp' => '123456'
+        ], now()->addMinutes(10));
+
+        // Wrong OTP code
+        $response = $this->postJson('/api/v1/auth/google/verify-otp', [
+            'email' => 'googleuser@example.com',
+            'intent' => $intent,
+            'otp' => '654321',
+        ]);
+
+        $response->assertStatus(422)
+                 ->assertJsonPath('status', false)
+                 ->assertJsonPath('message', 'Kode OTP yang Anda masukkan salah.');
+    }
+
+    public function test_resend_otp_success(): void
+    {
+        \Illuminate\Support\Facades\Mail::fake();
+
+        $user = User::factory()->create(['email' => 'googleuser@example.com']);
+        $intent = \Illuminate\Support\Str::random(40);
+        $otp = '111111';
+
+        \Illuminate\Support\Facades\Cache::put("otp_intent:{$intent}", [
+            'user_id' => $user->id,
+            'email' => $user->email,
+            'otp' => $otp
+        ], now()->addMinutes(10));
+
+        $response = $this->postJson('/api/v1/auth/google/resend-otp', [
+            'email' => 'googleuser@example.com',
+            'intent' => $intent,
+        ]);
+
+        $response->assertStatus(200)
+                 ->assertJsonPath('status', true);
+
+        // Check cache is updated
+        $newCached = \Illuminate\Support\Facades\Cache::get("otp_intent:{$intent}");
+        $this->assertNotEquals($otp, $newCached['otp']);
+        
+        \Illuminate\Support\Facades\Mail::assertSent(\App\Mail\OtpMail::class);
+    }
+
+    public function test_google_callback_deactivated_user(): void
+    {
+        $user = User::factory()->create([
+            'email' => 'deactivated@example.com',
+            'status' => 0,
+        ]);
+
+        $googleUser = \Mockery::mock('Laravel\Socialite\Two\User');
+        $googleUser->shouldReceive('getId')->andReturn('123456');
+        $googleUser->shouldReceive('getEmail')->andReturn('deactivated@example.com');
+        $googleUser->shouldReceive('getName')->andReturn('Deactivated User');
+        $googleUser->shouldReceive('getAvatar')->andReturn('avatar.jpg');
+
+        $provider = \Mockery::mock('Laravel\Socialite\Two\GoogleProvider');
+        $provider->shouldReceive('stateless')->andReturn($provider);
+        $provider->shouldReceive('user')->andReturn($googleUser);
+
+        \Laravel\Socialite\Facades\Socialite::shouldReceive('driver')->with('google')->andReturn($provider);
+
+        $response = $this->get('/api/v1/auth/google/callback');
+
+        $response->assertRedirect(config('app.frontend_url', 'http://localhost:5173') . '/login?error=Akun+Anda+telah+dinonaktifkan');
+        
+        $this->assertDatabaseHas('users', [
+            'email' => 'deactivated@example.com',
+            'status' => 0, // status must remain inactive
+        ]);
+    }
 }
 
